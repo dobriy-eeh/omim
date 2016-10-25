@@ -8,6 +8,7 @@
 #include "indexer/feature_edge_index.hpp"
 #include "indexer/feature_processor.hpp"
 #include "indexer/index.hpp"
+#include "indexer/scales.hpp"
 
 #include "geometry/rect2d.hpp"
 
@@ -28,6 +29,108 @@ using namespace platform;
 
 namespace
 {
+class SegPoint
+{
+public:
+  uint32_t m_featureId;
+  uint32_t m_segId;
+
+  SegPoint() = default;
+  SegPoint(const SegPoint &) = default;
+  SegPoint(uint32_t featureId, uint32_t segId)
+    : m_featureId(featureId)
+    , m_segId(segId)
+  {}
+
+  bool operator < (SegPoint const & point) const
+  {
+    if ( m_featureId != point.m_featureId )
+      return m_featureId < point.m_featureId;
+
+    return m_segId < point.m_segId;
+  }
+
+  bool operator == (SegPoint const & point) const
+  {
+    return m_featureId == point.m_featureId && m_segId == point.m_segId;
+  }
+
+  bool operator != (SegPoint const & point) const
+  {
+    return !(*this == point);
+  }
+
+  uint64_t calcKey() const
+  {
+    return (static_cast<uint64_t>(m_featureId) << 32) + static_cast<uint64_t>(m_segId);
+  }
+
+  template <class TSink>
+  void Serialize(TSink & sink) const
+  {
+    WriteToSink(sink, m_featureId);
+    WriteToSink(sink, m_segId);
+  }
+
+  template <class TSource>
+  void Deserialize(TSource & src)
+  {
+    m_featureId = ReadPrimitiveFromSource<decltype(m_featureId)>(src);
+    m_segId = ReadPrimitiveFromSource<decltype(m_segId)>(src);
+  }
+};
+
+class RouteJoint
+{
+public:
+  vector<SegPoint> m_points;
+
+  bool operator == (RouteJoint const & joint) const
+  {
+    if ( m_points.size() != joint.m_points.size())
+      return false;
+
+    for (size_t i = 0; i < m_points.size(); ++i)
+    {
+      if ( m_points[i] != (joint.m_points)[i] )
+        return false;
+    }
+    return true;
+  }
+
+  bool operator != (RouteJoint const & joint) const
+  {
+    return !(*this == joint);
+  }
+
+  template <class TSink>
+  void Serialize(TSink & sink) const
+  {
+    WriteToSink(sink, static_cast<uint32_t>(m_points.size()));
+    for ( auto const & point: m_points )
+    {
+      point.Serialize(sink);
+    }
+  }
+
+  template <class TSource>
+  void Deserialize(TSource & src)
+  {
+    size_t const pointsSize = static_cast<size_t>(ReadPrimitiveFromSource<uint32_t>(src));
+    m_points.insert(m_points.end(), pointsSize, SegPoint());
+    for (size_t i = 0; i < pointsSize; ++i)
+    {
+      m_points[i].Deserialize(src);
+    }
+  }
+};
+
+uint64_t calcLocationKey(m2::PointD const & point)
+{
+  m2::PointI const pointI( routing::PointDToPointI(point));
+  return (static_cast<uint64_t>(pointI.y) << 32) + static_cast<uint64_t>(pointI.x);
+}
+
 class Processor
 {
 public:
@@ -47,60 +150,27 @@ public:
 
   void operator()(FeatureType const & f)
   {
-    uint32_t const id = f.GetID().m_index;
-    if (m_outgoingEdges.size() != 0 && m_outgoingEdges.size() % 1000 == 0)
-      LOG(LINFO, ("id =", id, "road features ", m_outgoingEdges.size()));
-
     if (!m_roadGraph.IsRoad(f))
       return;
+
+    uint32_t const id = f.GetID().m_index;
+    if (m_featuresCount != 0 && m_featuresCount % 1000 == 0)
+      LOG(LINFO, ("id =", id, "road features", m_featuresCount));
+
+    ++m_featuresCount;
 
     f.ParseGeometry(FeatureType::BEST_GEOMETRY);
     size_t const pointsCount = f.GetPointsCount();
     if (pointsCount == 0)
       return;
 
-    FeatureOutgoingEdges edges(id);
-    edges.m_featureOutgoingEdges.resize(pointsCount);
-    // Node 1. In the code below all outgoing edges for all feature points are extracted
-    // with method FeaturesRoadGraph::GetOutgoingEdges(...). Then only edges belongs to the
-    // feature are saved in |m_outgoingEdges|. The idea behind it is
-    // to get rid of saving duplicate edges. The thing is every edge belongs to a feature.
-    // Saving only edges belong to a considered feature no egde would be lost and
-    // no edge would be saved twice. On the other hand there's a problem in that case.
-    // After edges are saved only judging by rounded to PointI coordinates it's possible
-    // to find all outgoing edges from a junction. Consequently it's possible that
-    // result of FeaturesRoadGraph::GetOutgoingEdges(...) and EdgeIndexLoader::GetOutgoingEdges(...)
-    // are different.
-    // @TODO It looks like that the result of FeaturesRoadGraph::GetOutgoingEdges(...) and
-    // EdgeIndexLoader::GetOutgoingEdges(...) are different in very rare case.
-    // It's necessaret to check it.
-
-    // Node 2. Another disadvantage of such way of saving graph is that a wrong result would be
-    // saved in case of features go in different levels but with close points. Probably
-    // another representation of graph would be better.
-    for (size_t i = 0; i < pointsCount; ++i)
+    for (size_t fromSegId = 0; fromSegId < pointsCount; ++fromSegId)
     {
-      m2::PointD const pointFrom = f.GetPoint(i);
-      routing::Junction const juctionFrom(pointFrom, kInvalidAltitude);
-      edges.m_featureOutgoingEdges[i].m_pointFrom = routing::PointDToPointI(pointFrom);
-      routing::IRoadGraph::TEdgeVector outgoingEdges;
-      m_roadGraph.GetOutgoingEdges(juctionFrom, outgoingEdges);
-      for (auto const & edge : outgoingEdges)
-      {
-        if (edge.GetFeatureId().m_index != id)
-          continue;
-        // |edge| belongs to |f|.
-        edges.m_featureOutgoingEdges[i].m_edges.emplace_back(
-            routing::PointDToPointI(edge.GetEndJunction().GetPoint()),
-            edge.GetSegId(), edge.IsForward());
-      }
+      uint64_t const locationKey = calcLocationKey(f.GetPoint(fromSegId));
+      SegPoint const segPoint(id,fromSegId);
+      RouteJoint & joint = m_joints[locationKey];
+      joint.m_points.push_back(segPoint);
     }
-
-    // Note. It's necessary to use SortUnique because some features form loops. That means
-    // the same feature contains a point more than once. In that case edges outgoing
-    // from the point are included more than once. So it's necessary to remove such duplicates.
-    edges.SortUnique();
-    m_outgoingEdges.push_back(move(edges));
   }
 
   vector<FeatureOutgoingEdges> const & GetOutgoingEdges()
@@ -118,9 +188,51 @@ public:
     m_index.ForEachInScale(*this, m_roadGraph.GetStreetReadScale());
   }
 
-  void Sort()
+  void PrintStatistics()
   {
-    sort(m_outgoingEdges.begin(), m_outgoingEdges.end(), my::LessBy(&FeatureOutgoingEdges::m_featureId));
+    map<size_t,vector<RouteJoint>> jointsBySize;
+
+    size_t jointsNumber = 0;
+    for(auto it = m_joints.begin(); it != m_joints.end();++it)
+    {
+      size_t const jointSize = it->second.m_points.size();
+      if ( jointSize < 2)
+        continue;
+
+      vector<RouteJoint> & joints = jointsBySize[jointSize];
+      joints.push_back(it->second);
+      ++jointsNumber;
+    }
+    LOG(LINFO, ("joints number =", jointsNumber));
+
+    int maxSegId = 0;
+    int maxFeatureId = 0;
+    for(auto it = jointsBySize.begin(); it != jointsBySize.end();++it)
+    {
+      for ( auto const & joint: it->second )
+      {
+        for ( auto const & point: joint.m_points )
+        {
+          if ( maxSegId < point.m_segId )
+            maxSegId = point.m_segId;
+          if ( maxFeatureId < point.m_featureId )
+            maxFeatureId = point.m_featureId;
+        }
+      }
+      LOG(LINFO, ("joints",it->first,":", it->second.size()));
+    }
+
+    LOG(LINFO, ("maxSegId =", maxSegId));
+    LOG(LINFO, ("maxFeatureId =", maxFeatureId));
+  }
+
+  template <class TSink>
+  void SerializeJoints(TSink & sink) const
+  {
+    for(auto it = m_joints.begin(); it != m_joints.end();++it)
+    {
+      it->second.Serialize(sink);
+    }
   }
 
 private:
@@ -128,6 +240,8 @@ private:
   routing::FeaturesRoadGraph m_roadGraph;
   vector<FeatureOutgoingEdges> m_outgoingEdges;
   m2::RectD m_limitRect;
+  map<uint64_t,RouteJoint> m_joints;
+  size_t m_featuresCount = 0;
 };
 }  // namespace
 
@@ -142,24 +256,15 @@ void BuildOutgoingEdgeIndex(string const & dir, string const & country)
     string const datFile = my::JoinFoldersToPath(dir, country + DATA_FILE_EXTENSION);
     LOG(LINFO, ("datFile =", datFile));
     processor.ForEachFeature();
-    processor.Sort();
+    processor.PrintStatistics();
 
     FilesContainerW cont(datFile, FileWriter::OP_WRITE_EXISTING);
     FileWriter w = cont.GetWriter(EDGE_INDEX_FILE_TAG);
 
-    vector<FeatureOutgoingEdges> const & outgoingEdges = processor.GetOutgoingEdges();
-
-    EdgeIndexHeader header(outgoingEdges.size());
+    EdgeIndexHeader header(0);
     header.Serialize(w);
 
-    m2::PointI const center = routing::PointDToPointI(processor.GetLimitRect().Center());
-    LOG(LINFO, ("Outgoing edges size =", outgoingEdges.size()));
-    uint32_t prevFeatureId = 0;
-    for (auto const & featureOutgoingEdges : outgoingEdges)
-    {
-      featureOutgoingEdges.Serialize(center, prevFeatureId, w);
-      prevFeatureId = featureOutgoingEdges.m_featureId;
-    }
+    processor.SerializeJoints(w);
   }
   catch (RootException const & e)
   {
