@@ -1,6 +1,7 @@
 #include "generator/edge_index_generator.hpp"
 
 #include "routing/features_road_graph.hpp"
+#include "routing/joint_graph.hpp"
 #include "routing/road_graph.hpp"
 #include "routing/routing_helpers.hpp"
 
@@ -26,105 +27,10 @@
 
 using namespace feature;
 using namespace platform;
+using namespace routing;
 
 namespace
 {
-class SegPoint
-{
-public:
-  uint32_t m_featureId;
-  uint32_t m_segId;
-
-  SegPoint() = default;
-  SegPoint(const SegPoint &) = default;
-  SegPoint(uint32_t featureId, uint32_t segId)
-    : m_featureId(featureId)
-    , m_segId(segId)
-  {}
-
-  bool operator < (SegPoint const & point) const
-  {
-    if ( m_featureId != point.m_featureId )
-      return m_featureId < point.m_featureId;
-
-    return m_segId < point.m_segId;
-  }
-
-  bool operator == (SegPoint const & point) const
-  {
-    return m_featureId == point.m_featureId && m_segId == point.m_segId;
-  }
-
-  bool operator != (SegPoint const & point) const
-  {
-    return !(*this == point);
-  }
-
-  uint64_t calcKey() const
-  {
-    return (static_cast<uint64_t>(m_featureId) << 32) + static_cast<uint64_t>(m_segId);
-  }
-
-  template <class TSink>
-  void Serialize(TSink & sink) const
-  {
-    WriteToSink(sink, m_featureId);
-    WriteToSink(sink, m_segId);
-  }
-
-  template <class TSource>
-  void Deserialize(TSource & src)
-  {
-    m_featureId = ReadPrimitiveFromSource<decltype(m_featureId)>(src);
-    m_segId = ReadPrimitiveFromSource<decltype(m_segId)>(src);
-  }
-};
-
-class RouteJoint
-{
-public:
-  vector<SegPoint> m_points;
-
-  bool operator == (RouteJoint const & joint) const
-  {
-    if ( m_points.size() != joint.m_points.size())
-      return false;
-
-    for (size_t i = 0; i < m_points.size(); ++i)
-    {
-      if ( m_points[i] != (joint.m_points)[i] )
-        return false;
-    }
-    return true;
-  }
-
-  bool operator != (RouteJoint const & joint) const
-  {
-    return !(*this == joint);
-  }
-
-  template <class TSink>
-  void Serialize(TSink & sink) const
-  {
-    WriteToSink(sink, static_cast<uint32_t>(m_points.size()));
-    for ( auto const & point: m_points )
-    {
-      point.Serialize(sink);
-    }
-  }
-
-  template <class TSource>
-  void Deserialize(TSource & src)
-  {
-    size_t const pointsSize = static_cast<size_t>(ReadPrimitiveFromSource<uint32_t>(src));
-    m_points.insert(m_points.end(), pointsSize, SegPoint());
-    for (size_t i = 0; i < pointsSize; ++i)
-    {
-      m_points[i].Deserialize(src);
-    }
-  }
-};
-
 uint64_t calcLocationKey(m2::PointD const & point)
 {
   m2::PointI const pointI( routing::PointDToPointI(point));
@@ -167,9 +73,7 @@ public:
     for (size_t fromSegId = 0; fromSegId < pointsCount; ++fromSegId)
     {
       uint64_t const locationKey = calcLocationKey(f.GetPoint(fromSegId));
-      SegPoint const segPoint(id,fromSegId);
-      RouteJoint & joint = m_joints[locationKey];
-      joint.m_points.push_back(segPoint);
+      m_joints[locationKey].AddPoint(SegPoint(id,fromSegId));
     }
   }
 
@@ -190,16 +94,16 @@ public:
 
   void PrintStatistics()
   {
-    map<size_t,vector<RouteJoint>> jointsBySize;
+    map<size_t,vector<Joint>> jointsBySize;
 
     size_t jointsNumber = 0;
     for(auto it = m_joints.begin(); it != m_joints.end();++it)
     {
-      size_t const jointSize = it->second.m_points.size();
+      size_t const jointSize = it->second.GetSize();
       if ( jointSize < 2)
         continue;
 
-      vector<RouteJoint> & joints = jointsBySize[jointSize];
+      vector<Joint> & joints = jointsBySize[jointSize];
       joints.push_back(it->second);
       ++jointsNumber;
     }
@@ -211,12 +115,13 @@ public:
     {
       for ( auto const & joint: it->second )
       {
-        for ( auto const & point: joint.m_points )
+        for ( size_t i = 0; i < joint.GetSize(); ++i)
         {
-          if ( maxSegId < point.m_segId )
-            maxSegId = point.m_segId;
-          if ( maxFeatureId < point.m_featureId )
-            maxFeatureId = point.m_featureId;
+          SegPoint const & point = joint.GetPoint(i);
+          if ( maxSegId < point.GetSegId() )
+            maxSegId = point.GetSegId();
+          if ( maxFeatureId < point.GetFeatureId() )
+            maxFeatureId = point.GetFeatureId();
         }
       }
       LOG(LINFO, ("joints",it->first,":", it->second.size()));
@@ -240,7 +145,7 @@ private:
   routing::FeaturesRoadGraph m_roadGraph;
   vector<FeatureOutgoingEdges> m_outgoingEdges;
   m2::RectD m_limitRect;
-  map<uint64_t,RouteJoint> m_joints;
+  map<uint64_t,Joint> m_joints;
   size_t m_featuresCount = 0;
 };
 }  // namespace
