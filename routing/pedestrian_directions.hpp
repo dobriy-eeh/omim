@@ -15,6 +15,10 @@ public:
                 Route::TTurns & turns, vector<Junction> & routeGeometry,
                 my::Cancellable const & cancellable) override;
 
+  void Generate(IRoadGraph const & graph, vector<Junction> const & path, Route::TTimes & times,
+                Route::TTurns & turns, vector<Junction> & routeGeometry,
+                my::Cancellable const & cancellable, vector<Edge> const & routeEdges);
+
 private:
   void CalculateTurns(IRoadGraph const & graph, vector<Edge> const & routeEdges,
                       Route::TTurns & turnsDir,

@@ -13,6 +13,7 @@ INCLUDEPATH += $$ROOT_DIR/3party/jansson/src \
                $$ROOT_DIR/3party/osrm/osrm-backend/third_party
 
 SOURCES += \
+    astar_router.cpp \
     async_router.cpp \
     base/followed_polyline.cpp \
     bicycle_directions.cpp \
@@ -51,6 +52,7 @@ SOURCES += \
 
 
 HEADERS += \
+    astar_router.hpp \
     async_router.hpp \
     base/astar_algorithm.hpp \
     base/followed_polyline.hpp \

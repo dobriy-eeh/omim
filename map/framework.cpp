@@ -7,6 +7,7 @@
 
 #include "defines.hpp"
 
+#include "routing/astar_router.hpp"
 #include "routing/online_absent_fetcher.hpp"
 #include "routing/osrm_router.hpp"
 #include "routing/road_graph_router.hpp"
@@ -2337,13 +2338,14 @@ void Framework::SetRouterImpl(RouterType type)
   }
   else
   {
-    auto localFileChecker = [this](string const & countryFile) -> bool
-    {
-      return m_model.GetIndex().GetMwmIdByCountryFile(CountryFile(countryFile)).IsAlive();
-    };
+//    auto localFileChecker = [this](string const & countryFile) -> bool
+//    {
+//      return m_model.GetIndex().GetMwmIdByCountryFile(CountryFile(countryFile)).IsAlive();
+//    };
 
-    router.reset(new OsrmRouter(&m_model.GetIndex(), countryFileGetter));
-    fetcher.reset(new OnlineAbsentCountriesFetcher(countryFileGetter, localFileChecker));
+//    router.reset(new OsrmRouter(&m_model.GetIndex(), countryFileGetter));
+//    fetcher.reset(new OnlineAbsentCountriesFetcher(countryFileGetter, localFileChecker));
+    router = make_unique<AStarRouter>(m_model.GetIndex());
     m_routingSession.SetRoutingSettings(routing::GetCarRoutingSettings());
   }
 

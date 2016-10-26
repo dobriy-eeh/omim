@@ -59,6 +59,24 @@ void PedestrianDirectionsEngine::Generate(IRoadGraph const & graph, vector<Junct
   routeGeometry = path;
 }
 
+void PedestrianDirectionsEngine::Generate(IRoadGraph const & graph, vector<Junction> const & path,
+                                          Route::TTimes & times, Route::TTurns & turns,
+                                          vector<Junction> & routeGeometry,
+                                          my::Cancellable const & cancellable, vector<Edge> const & routeEdges)
+{
+  times.clear();
+  turns.clear();
+  routeGeometry.clear();
+
+  if (path.size() <= 1)
+    return;
+
+  CalculateTimes(graph, path, times);
+
+  CalculateTurns(graph, routeEdges, turns, cancellable);
+  routeGeometry = path;
+}
+
 void PedestrianDirectionsEngine::CalculateTurns(IRoadGraph const & graph,
                                                 vector<Edge> const & routeEdges,
                                                 Route::TTurns & turns,
