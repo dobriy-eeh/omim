@@ -1,5 +1,6 @@
 #include "astar_router.hpp"
 
+#include "routing/base/astar_algorithm.hpp"
 #include "routing/route.hpp"
 #include "routing/turns_generator.hpp"
 #include "routing/features_road_graph.hpp"
@@ -7,6 +8,7 @@
 #include "routing/bicycle_model.hpp"
 #include "routing/pedestrian_directions.hpp"
 #include "routing/pedestrian_model.hpp"
+#include "routing/joint_graph.hpp"
 
 #include "indexer/feature_altitude.hpp"
 
@@ -35,15 +37,19 @@ IRouter::ResultCode AStarRouter::CalculateRoute(m2::PointD const & startPoint,
 {
   vector<pair<Edge, Junction>> startVicinity;
   m_roadGraph->FindClosestEdges(startPoint,kMaxRoadCandidates, startVicinity);
-
   if (startVicinity.empty())
     return IRouter::StartPointNotFound;
 
+  Edge const & startEdge = startVicinity[0].first;
+  SegPoint const startVertex(startEdge.GetFeatureId().m_index, startEdge.GetSegId());
+
   vector<pair<Edge, Junction>> finalVicinity;
   m_roadGraph->FindClosestEdges(finalPoint,kMaxRoadCandidates, finalVicinity);
-
   if (finalVicinity.empty())
     return IRouter::EndPointNotFound;
+
+  Edge const & finishEdge = finalVicinity[0].first;
+  SegPoint const finishVertex(finishEdge.GetFeatureId().m_index, finishEdge.GetSegId());
 
   Junction const startPos = RoundJunction(startVicinity[0].first.GetStartJunction());
 //  Junction const finalPos = RoundJunction(finalVicinity[0].first.GetStartJunction());
@@ -57,6 +63,18 @@ IRouter::ResultCode AStarRouter::CalculateRoute(m2::PointD const & startPoint,
 
   vector<Edge> routeEdges;
   routeEdges.push_back(startVicinity[0].first);
+
+  function<void(SegPoint const &, SegPoint const &)> onVisitJunctionFn =
+      [](SegPoint const & from, SegPoint const & to)
+  {
+  };
+
+  JointGraph graph;
+  AStarAlgorithm<JointGraph> algorithm;
+
+  RoutingResult<SegPoint> routingResult;
+  AStarAlgorithm<JointGraph>::Result const resultCode = algorithm.FindPathBidirectional(
+      graph, startVertex, finishVertex, routingResult, delegate, onVisitJunctionFn);
 
   ReconstructRoute(move(path), route, delegate, routeEdges);
   return IRouter::NoError;

@@ -6,17 +6,20 @@
 
 namespace routing
 {
-class SegPoint
+class SegPoint final
 {
 public:
   SegPoint() = default;
+
   SegPoint(const SegPoint &) = default;
+
   SegPoint(uint32_t featureId, uint32_t segId)
     : m_featureId(featureId)
     , m_segId(segId)
   {}
 
   uint32_t GetFeatureId() const { return m_featureId; }
+
   uint32_t GetSegId() const { return m_segId; }
 
   bool operator < (SegPoint const & point) const
@@ -61,7 +64,7 @@ private:
   uint32_t m_segId;
 };
 
-class Joint
+class Joint final
 {
 public:
   void AddPoint(SegPoint const & point)
@@ -114,5 +117,53 @@ public:
 
 private:
   vector<SegPoint> m_points;
+};
+
+class SegEdge
+{
+public:
+  SegEdge(SegPoint const & target, double weight) : target(target), weight(weight) {}
+
+  inline SegPoint const & GetTarget() const { return target; }
+
+  inline double GetWeight() const { return weight; }
+
+private:
+  SegPoint const target;
+  double const weight;
+};
+
+class JointGraph final
+{
+public:
+  using TVertexType = SegPoint;
+  using TEdgeType = SegEdge;
+
+  void GetOutgoingEdgesList(SegPoint const & vertex, vector<SegEdge> & edges) const
+  {
+  }
+
+  void GetIngoingEdgesList(SegPoint const & vertex, vector<SegEdge> & edges) const
+  {
+  }
+
+  double HeuristicCostEstimate(SegPoint const & from, SegPoint const & to) const
+  {
+    return 1.0;
+  }
+
+  template <class TSource>
+  void Deserialize(TSource & src)
+  {
+    size_t const jointsSize = static_cast<size_t>(ReadPrimitiveFromSource<uint32_t>(src));
+    m_joints.insert(m_joints.end(), jointsSize, Joint());
+    for (size_t i = 0; i < jointsSize; ++i)
+    {
+      m_joints[i].Deserialize(src);
+    }
+  }
+
+private:
+  vector<Joint> m_joints;
 };
 }  // namespace routing
