@@ -1,5 +1,7 @@
 #pragma once
 
+#include "routing/road_graph.hpp"
+
 #include "indexer/feature.hpp"
 #include "indexer/index.hpp"
 
@@ -50,6 +52,8 @@ public:
   {
     return (static_cast<uint64_t>(m_featureId) << 32) + static_cast<uint64_t>(m_segId);
   }
+
+  friend string DebugPrint(SegPoint const & r);
 
   template <class TSink>
   void Serialize(TSink & sink) const
@@ -149,8 +153,9 @@ public:
 
   void GetOutgoingEdgesList(SegPoint const & vertex, vector<SegEdge> & edges) const;
   void GetIngoingEdgesList(SegPoint const & vertex, vector<SegEdge> & edges) const;
-
   double HeuristicCostEstimate(SegPoint const & from, SegPoint const & to) const;
+
+  vector<Junction> ConvertToGeometry(vector<SegPoint> const & vertexes) const;
 
   template <class TSource>
   void Deserialize(TSource & src)
@@ -169,6 +174,7 @@ public:
   }
 
 private:
+  void AddAdjacentVertexes(SegPoint const & vertex, vector<SegEdge> & edges) const;
   FeatureType const & GetFeature(uint32_t featureId) const;
   FeatureType const & LoadFeature(uint32_t featureId) const;
   m2::PointD const & GetPoint(SegPoint const & vertex) const;

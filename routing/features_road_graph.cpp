@@ -44,7 +44,7 @@ FeaturesRoadGraph::Value::Value(MwmSet::MwmHandle handle) : m_mwmHandle(move(han
     return;
 
   m_altitudeLoader = make_unique<feature::AltitudeLoader>(*m_mwmHandle.GetValue<MwmValue>());
-  m_edgeIndexLoader = make_unique<feature::EdgeIndexLoader>(*m_mwmHandle.GetValue<MwmValue>(), m_mwmHandle.GetId());
+  //m_edgeIndexLoader = make_unique<feature::EdgeIndexLoader>(*m_mwmHandle.GetValue<MwmValue>(), m_mwmHandle.GetId());
 }
 
 FeaturesRoadGraph::CrossCountryVehicleModel::CrossCountryVehicleModel(unique_ptr<IVehicleModelFactory> && vehicleModelFactory)
@@ -344,15 +344,15 @@ FeaturesRoadGraph::Value const & FeaturesRoadGraph::LockMwm(MwmSet::MwmId const 
       .first->second;
 }
 
-void FeaturesRoadGraph::GetRegularOutgoingEdges(Junction const & junction, TEdgeVector & edges) const
-{
-  Value const & value = LockMwm(m_testMwmId);
-  value.m_edgeIndexLoader->GetOutgoingEdges(junction, edges);
-}
+//void FeaturesRoadGraph::GetRegularOutgoingEdges(Junction const & junction, TEdgeVector & edges) const
+//{
+//  Value const & value = LockMwm(m_testMwmId);
+//  value.m_edgeIndexLoader->GetOutgoingEdges(junction, edges);
+//}
 
-void FeaturesRoadGraph::GetRegularIngoingEdges(Junction const & startJunction, TEdgeVector & edges) const
-{
-  Value const & value = LockMwm(m_testMwmId);
-  value.m_edgeIndexLoader->GetIngoingEdges(startJunction, edges);
-}
+//void FeaturesRoadGraph::GetRegularIngoingEdges(Junction const & startJunction, TEdgeVector & edges) const
+//{
+//  Value const & value = LockMwm(m_testMwmId);
+//  value.m_edgeIndexLoader->GetIngoingEdges(startJunction, edges);
+//}
 }  // namespace routing

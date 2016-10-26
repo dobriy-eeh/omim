@@ -56,11 +56,9 @@ IRouter::ResultCode AStarRouter::CalculateRoute(m2::PointD const & startPoint,
 //  Junction const finalPos = RoundJunction(finalVicinity[0].first.GetStartJunction());
   Junction const finalPos = RoundJunction(startVicinity[0].first.GetEndJunction());
 
-  vector<Junction> path;
-//  path.push_back(Junction(startPoint, feature::kDefaultAltitudeMeters));
-//  path.push_back(Junction(finalPoint, feature::kDefaultAltitudeMeters));
-  path.push_back(startPos);
-  path.push_back(finalPos);
+//  vector<Junction> path;
+//  path.push_back(startPos);
+//  path.push_back(finalPos);
 
   vector<Edge> routeEdges;
   routeEdges.push_back(startVicinity[0].first);
@@ -71,10 +69,29 @@ IRouter::ResultCode AStarRouter::CalculateRoute(m2::PointD const & startPoint,
   };
 
   JointGraph graph(m_index);
+
+  MwmSet::MwmId const testMwmId(m_index.GetMwmIdByCountryFile(platform::CountryFile("Russia_Moscow")));
+  MwmSet::MwmHandle mwmHandle = m_index.GetMwmHandleById(testMwmId);
+  MwmValue const & mwmValue = *mwmHandle.GetValue<MwmValue>();
+
+  try
+  {
+    FilesContainerR::TReader reader(mwmValue.m_cont.GetReader(EDGE_INDEX_FILE_TAG));
+    ReaderSource<FilesContainerR::TReader> src(reader);
+    feature::EdgeIndexHeader header;
+    header.Deserialize(src);
+    graph.Deserialize(src);
+  }
+  catch (Reader::OpenException const & e)
+  {
+    LOG(LERROR, ("File", mwmValue.GetCountryFileName(), "Error while reading", EDGE_INDEX_FILE_TAG, "section.", e.Msg()));
+    return IRouter::RouteFileNotExist;
+  }
+
   AStarAlgorithm<JointGraph> algorithm;
 
   RoutingResult<SegPoint> routingResult;
-  AStarAlgorithm<JointGraph>::Result const resultCode = algorithm.FindPathBidirectional(
+  AStarAlgorithm<JointGraph>::Result const resultCode = algorithm.FindPath(
       graph, startVertex, finishVertex, routingResult, delegate, onVisitJunctionFn);
 
   switch (resultCode) {
@@ -83,6 +100,7 @@ IRouter::ResultCode AStarRouter::CalculateRoute(m2::PointD const & startPoint,
   case AStarAlgorithm<JointGraph>::Result::Cancelled:
     return IRouter::Cancelled;
   case AStarAlgorithm<JointGraph>::Result::OK:
+    vector<Junction> path = graph.ConvertToGeometry(routingResult.path);
     ReconstructRoute(move(path), route, delegate, routeEdges);
     return IRouter::NoError;
   }

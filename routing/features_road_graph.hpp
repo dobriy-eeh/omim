@@ -86,8 +86,8 @@ private:
   // @TODO Now it's necessary to uncomment virtual GetRegularOutgoingEdges() and GetRegularIngoingEdges()
   // methods and |m_edgeIndexLoader| to use edge index for getting ingoing and outgoing edges and comment them back
   // if it's necessary to use geometry index. A better solution should be implemented.
-  void GetRegularOutgoingEdges(Junction const & junction, TEdgeVector & edges) const override;
-  void GetRegularIngoingEdges(Junction const & junction, TEdgeVector & edges) const override;
+//  void GetRegularOutgoingEdges(Junction const & junction, TEdgeVector & edges) const override;
+//  void GetRegularIngoingEdges(Junction const & junction, TEdgeVector & edges) const override;
 
   struct Value
   {
@@ -98,7 +98,7 @@ private:
 
     MwmSet::MwmHandle m_mwmHandle;
     unique_ptr<feature::AltitudeLoader> m_altitudeLoader;
-    unique_ptr<feature::EdgeIndexLoader> m_edgeIndexLoader;
+//    unique_ptr<feature::EdgeIndexLoader> m_edgeIndexLoader;
   };
 
   bool IsOneWay(FeatureType const & ft) const;

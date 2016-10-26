@@ -94,6 +94,14 @@ public:
 
   void PrintStatistics()
   {
+    for(auto it = m_joints.begin(); it != m_joints.end();)
+    {
+      if ( it->second.GetSize() < 2)
+        it = m_joints.erase(it);
+      else
+        ++it;
+    }
+
     map<size_t,vector<Joint>> jointsBySize;
 
     size_t jointsNumber = 0;
@@ -134,6 +142,7 @@ public:
   template <class TSink>
   void SerializeJoints(TSink & sink) const
   {
+    WriteToSink(sink, static_cast<uint32_t>(m_joints.size()));
     for(auto it = m_joints.begin(); it != m_joints.end();++it)
     {
       it->second.Serialize(sink);
