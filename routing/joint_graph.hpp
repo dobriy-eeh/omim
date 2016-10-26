@@ -1,8 +1,14 @@
 #pragma once
 
+#include "indexer/feature.hpp"
+#include "indexer/index.hpp"
+
 #include "coding/reader.hpp"
 
+#include "geometry/point2d.hpp"
+
 #include "std/cstdint.hpp"
+
 
 namespace routing
 {
@@ -139,31 +145,39 @@ public:
   using TVertexType = SegPoint;
   using TEdgeType = SegEdge;
 
-  void GetOutgoingEdgesList(SegPoint const & vertex, vector<SegEdge> & edges) const
-  {
-  }
+  explicit JointGraph(Index const & index);
 
-  void GetIngoingEdgesList(SegPoint const & vertex, vector<SegEdge> & edges) const
-  {
-  }
+  void GetOutgoingEdgesList(SegPoint const & vertex, vector<SegEdge> & edges) const;
+  void GetIngoingEdgesList(SegPoint const & vertex, vector<SegEdge> & edges) const;
 
-  double HeuristicCostEstimate(SegPoint const & from, SegPoint const & to) const
-  {
-    return 1.0;
-  }
+  double HeuristicCostEstimate(SegPoint const & from, SegPoint const & to) const;
 
   template <class TSource>
   void Deserialize(TSource & src)
   {
-    size_t const jointsSize = static_cast<size_t>(ReadPrimitiveFromSource<uint32_t>(src));
-    m_joints.insert(m_joints.end(), jointsSize, Joint());
-    for (size_t i = 0; i < jointsSize; ++i)
+    size_t const jointsNumber = static_cast<size_t>(ReadPrimitiveFromSource<uint32_t>(src));
+
+    for (size_t i = 0; i < jointsNumber; ++i)
     {
-      m_joints[i].Deserialize(src);
+      shared_ptr<Joint> joint = make_shared<Joint>();
+      joint->Deserialize(src);
+      for (size_t j = 0; j < joint->GetSize(); ++j)
+      {
+        m_joints[joint->GetPoint(j).HashCode()] = joint;
+      }
     }
   }
 
 private:
-  vector<Joint> m_joints;
+  FeatureType const & GetFeature(uint32_t featureId) const;
+  FeatureType const & LoadFeature(uint32_t featureId) const;
+  m2::PointD const & GetPoint(SegPoint const & vertex) const;
+
+  Index const & m_index;
+  // @TODO |m_testMwmId| is added for writing prototype. It should be removed. MwmId from |m_mwmLocks|
+  // should be used instead.
+  MwmSet::MwmId const m_testMwmId;
+  map<uint64_t,shared_ptr<Joint>> m_joints;
+  mutable map<uint32_t,FeatureType> m_features;
 };
 }  // namespace routing

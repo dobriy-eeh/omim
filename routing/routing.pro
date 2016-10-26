@@ -24,6 +24,7 @@ SOURCES += \
     cross_routing_context.cpp \
     directions_engine.cpp \
     features_road_graph.cpp \
+    joint_graph.cpp \
     nearest_edge_finder.cpp \
     online_absent_fetcher.cpp \
     online_cross_fetcher.cpp \
@@ -64,6 +65,7 @@ HEADERS += \
     cross_routing_context.hpp \
     directions_engine.hpp \
     features_road_graph.hpp \
+    joint_graph.hpp \
     loaded_path_segment.hpp \
     nearest_edge_finder.hpp \
     online_absent_fetcher.hpp \
@@ -95,4 +97,3 @@ HEADERS += \
     turns_sound_settings.hpp \
     turns_tts_text.hpp \
     vehicle_model.hpp \
-    joint_graph.hpp

@@ -20,7 +20,8 @@ size_t constexpr kMaxRoadCandidates = 6;
 namespace routing
 {
 AStarRouter::AStarRouter(Index const & index)
-  : m_roadGraph(make_unique<FeaturesRoadGraph>(index, IRoadGraph::Mode::ObeyOnewayTag, make_unique<PedestrianModelFactory>()))
+  : m_index(index)
+  , m_roadGraph(make_unique<FeaturesRoadGraph>(index, IRoadGraph::Mode::ObeyOnewayTag, make_unique<PedestrianModelFactory>()))
   , m_directionsEngine(new PedestrianDirectionsEngine())
 {
 }
@@ -69,16 +70,22 @@ IRouter::ResultCode AStarRouter::CalculateRoute(m2::PointD const & startPoint,
   {
   };
 
-  JointGraph graph;
+  JointGraph graph(m_index);
   AStarAlgorithm<JointGraph> algorithm;
 
   RoutingResult<SegPoint> routingResult;
   AStarAlgorithm<JointGraph>::Result const resultCode = algorithm.FindPathBidirectional(
       graph, startVertex, finishVertex, routingResult, delegate, onVisitJunctionFn);
 
-  ReconstructRoute(move(path), route, delegate, routeEdges);
-  return IRouter::NoError;
-//  return IRouter::RouteNotFound;
+  switch (resultCode) {
+  case AStarAlgorithm<JointGraph>::Result::NoPath:
+    return IRouter::RouteNotFound;
+  case AStarAlgorithm<JointGraph>::Result::Cancelled:
+    return IRouter::Cancelled;
+  case AStarAlgorithm<JointGraph>::Result::OK:
+    ReconstructRoute(move(path), route, delegate, routeEdges);
+    return IRouter::NoError;
+  }
 }
 
 void AStarRouter::ReconstructRoute(vector<Junction> && path, Route & route,

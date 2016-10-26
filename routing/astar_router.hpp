@@ -27,6 +27,7 @@ private:
   void ReconstructRoute(vector<Junction> && junctions, Route & route,
                         my::Cancellable const & cancellable, vector<Edge> const & routeEdges) const;
 
+  Index const & m_index;
   unique_ptr<IRoadGraph> const m_roadGraph;
   unique_ptr<PedestrianDirectionsEngine> const m_directionsEngine;
 };
