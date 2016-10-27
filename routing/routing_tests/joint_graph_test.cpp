@@ -109,11 +109,14 @@ void CheckRouteAllCombos(JointGraph const & graph, vector<SegPoint> const & ends
 }  // namespace
 
 
-//       -2
-//       -1
-// -2 -1  0  1  2
-//        1
-//        2
+//            R1:
+//
+//            -2
+//            -1
+//  R0: -2 -1  0  1  2
+//             1
+//             2
+//
 UNIT_TEST(FindPathCross)
 {
   unique_ptr<TestFeaturePointsProvider> provider = make_unique<TestFeaturePointsProvider>();
@@ -129,14 +132,15 @@ UNIT_TEST(FindPathCross)
   CheckRouteBothWays(graph,{0,0}, {1,1}, 4);
 }
 
-//     R4  R5  R6  R7
-// R0:  0 - * - * - *
-//      |   |   |   |
-// R1:  * - 1 - * - *
-//      |   |   |   |
-// R2   * - * - 2 - *
-//      |   |   |   |
-// R3   * - * - * - 3
+//      R4  R5  R6  R7
+//
+//  R0:  0 - * - * - *
+//       |   |   |   |
+//  R1:  * - 1 - * - *
+//       |   |   |   |
+//  R2   * - * - 2 - *
+//       |   |   |   |
+//  R3   * - * - * - 3
 //
 UNIT_TEST(FindPathManhattan)
 {
