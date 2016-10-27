@@ -52,17 +52,6 @@ IRouter::ResultCode AStarRouter::CalculateRoute(m2::PointD const & startPoint,
   Edge const & finishEdge = finalVicinity[0].first;
   SegPoint const finishVertex(finishEdge.GetFeatureId().m_index, finishEdge.GetSegId());
 
-  Junction const startPos = RoundJunction(startVicinity[0].first.GetStartJunction());
-//  Junction const finalPos = RoundJunction(finalVicinity[0].first.GetStartJunction());
-  Junction const finalPos = RoundJunction(startVicinity[0].first.GetEndJunction());
-
-//  vector<Junction> path;
-//  path.push_back(startPos);
-//  path.push_back(finalPos);
-
-  vector<Edge> routeEdges;
-  routeEdges.push_back(startVicinity[0].first);
-
   function<void(SegPoint const &, SegPoint const &)> onVisitJunctionFn =
       [](SegPoint const & from, SegPoint const & to)
   {
@@ -101,6 +90,8 @@ IRouter::ResultCode AStarRouter::CalculateRoute(m2::PointD const & startPoint,
     return IRouter::Cancelled;
   case AStarAlgorithm<JointGraph>::Result::OK:
     vector<Junction> path = graph.ConvertToGeometry(routingResult.path);
+    vector<Edge> routeEdges;
+//    routeEdges.push_back(startVicinity[0].first);
     ReconstructRoute(move(path), route, delegate, routeEdges);
     return IRouter::NoError;
   }
