@@ -66,22 +66,29 @@ vector<Junction> JointGraph::ConvertToGeometry(vector<SegPoint> const & vertexes
 
 void JointGraph::AddAdjacentVertexes(SegPoint const & vertex, vector<SegEdge> & edges) const
 {
-  FeatureType const & feature = GetFeature(vertex.GetFeatureId());
-  m2::PointD const & point = feature.GetPoint(vertex.GetSegId());
-
   if (vertex.GetSegId() > 0)
   {
-    uint32_t const adjacentId = vertex.GetSegId() - 1;
-    double const distance = CalcDistance(point, feature.GetPoint(adjacentId));
-    edges.push_back(SegEdge(SegPoint(vertex.GetFeatureId(),adjacentId), distance));
+    SegPoint const nearbyVertex = ResolveVertex(vertex.GetFeatureId(), vertex.GetSegId() - 1);
+    double const distance = HeuristicCostEstimate(vertex, nearbyVertex);
+    edges.push_back(SegEdge(nearbyVertex, distance));
   }
 
-  if (vertex.GetSegId() < feature.GetPointsCount() - 1)
+  if (vertex.GetSegId() < GetFeature(vertex.GetFeatureId()).GetPointsCount() - 1)
   {
-    uint32_t const adjacentId = vertex.GetSegId() + 1;
-    double const distance = CalcDistance(point, feature.GetPoint(adjacentId));
-    edges.push_back(SegEdge(SegPoint(vertex.GetFeatureId(),adjacentId), distance));
+    SegPoint const nearbyVertex = ResolveVertex(vertex.GetFeatureId(), vertex.GetSegId() + 1);
+    double const distance = HeuristicCostEstimate(vertex, nearbyVertex);
+    edges.push_back(SegEdge(nearbyVertex, distance));
   }
+}
+
+SegPoint JointGraph::ResolveVertex(uint32_t featureId, uint32_t segId) const
+{
+  SegPoint const unresolved(featureId,segId);
+  auto it = m_joints.find(unresolved.HashCode());
+  if ( it == m_joints.end())
+    return unresolved;
+
+  return it->second->GetPoint(0);
 }
 
 FeatureType const & JointGraph::GetFeature(uint32_t featureId) const

@@ -178,6 +178,7 @@ private:
   FeatureType const & GetFeature(uint32_t featureId) const;
   FeatureType const & LoadFeature(uint32_t featureId) const;
   m2::PointD const & GetPoint(SegPoint const & vertex) const;
+  SegPoint ResolveVertex(uint32_t featureId, uint32_t segId) const;
 
   Index const & m_index;
   // @TODO |m_testMwmId| is added for writing prototype. It should be removed. MwmId from |m_mwmLocks|
