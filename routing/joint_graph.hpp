@@ -82,6 +82,12 @@ public:
     m_points.push_back(point);
   }
 
+  void AddPoints(vector<SegPoint> const & points)
+  {
+    m_points.reserve(m_points.size() + points.size());
+    m_points.insert( m_points.end(), points.begin(), points.end());
+  }
+
   size_t GetSize() const { return m_points.size(); }
 
   SegPoint const & GetPoint(size_t i) const { return m_points[i]; }
@@ -167,7 +173,7 @@ public:
 
   vector<Junction> ConvertToGeometry(vector<SegPoint> const & vertexes) const;
 
-  void AddJoint(shared_ptr<Joint> & joint)
+  void AddJoint(shared_ptr<Joint> joint)
   {
     for (size_t j = 0; j < joint->GetSize(); ++j)
     {
