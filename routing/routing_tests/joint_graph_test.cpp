@@ -149,6 +149,14 @@ UNIT_TEST(FindPathManhattan)
 
   JointGraph graph(move(provider));
 
+  for ( uint32_t i = 0; i < 4; ++i )
+  {
+    for ( uint32_t j = 0; j < 4; ++j )
+    {
+      graph.AddJoint(MakeJoint({{i,j},{j+4,i}}));
+    }
+  }
+
   for ( uint32_t i = 0; i < 8; ++i )
   {
     for ( uint32_t start = 0; start < 3; ++start )
@@ -157,14 +165,6 @@ UNIT_TEST(FindPathManhattan)
       {
         CheckRouteAndBack(graph,{i,start}, {i,finish}, finish-start+1);
       }
-    }
-  }
-
-  for ( uint32_t i = 0; i < 4; ++i )
-  {
-    for ( uint32_t j = 0; j < 4; ++j )
-    {
-      graph.AddJoint(MakeJoint({{i,j},{j+4,i}}));
     }
   }
 
