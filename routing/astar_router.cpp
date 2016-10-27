@@ -57,7 +57,7 @@ IRouter::ResultCode AStarRouter::CalculateRoute(m2::PointD const & startPoint,
   {
   };
 
-  JointGraph graph(m_index);
+  JointGraph graph(CreateFeaturePointsProvider(m_index));
 
   MwmSet::MwmId const testMwmId(m_index.GetMwmIdByCountryFile(platform::CountryFile("Russia_Moscow")));
   MwmSet::MwmHandle mwmHandle = m_index.GetMwmHandleById(testMwmId);

@@ -143,19 +143,37 @@ private:
   double const weight;
 };
 
+class FeaturePointsProvider
+{
+public:
+  virtual ~FeaturePointsProvider() = default;
+  virtual m2::PointD const & GetPoint(uint32_t featureId, uint32_t segId) const = 0;
+  virtual size_t GetPointsCount(uint32_t featureId) const = 0;
+};
+
+unique_ptr<FeaturePointsProvider> CreateFeaturePointsProvider(Index const & index);
+
 class JointGraph final
 {
 public:
   using TVertexType = SegPoint;
   using TEdgeType = SegEdge;
 
-  explicit JointGraph(Index const & index);
+  explicit JointGraph(unique_ptr<FeaturePointsProvider> pointsProvider);
 
   void GetOutgoingEdgesList(SegPoint const & vertex, vector<SegEdge> & edges) const;
   void GetIngoingEdgesList(SegPoint const & vertex, vector<SegEdge> & edges) const;
   double HeuristicCostEstimate(SegPoint const & from, SegPoint const & to) const;
 
   vector<Junction> ConvertToGeometry(vector<SegPoint> const & vertexes) const;
+
+  void AddJoint(shared_ptr<Joint> & joint)
+  {
+    for (size_t j = 0; j < joint->GetSize(); ++j)
+    {
+      m_joints[joint->GetPoint(j).HashCode()] = joint;
+    }
+  }
 
   template <class TSource>
   void Deserialize(TSource & src)
@@ -166,25 +184,16 @@ public:
     {
       shared_ptr<Joint> joint = make_shared<Joint>();
       joint->Deserialize(src);
-      for (size_t j = 0; j < joint->GetSize(); ++j)
-      {
-        m_joints[joint->GetPoint(j).HashCode()] = joint;
-      }
+      AddJoint(joint);
     }
   }
 
 private:
   void AddAdjacentVertexes(SegPoint const & vertex, vector<SegEdge> & edges) const;
-  FeatureType const & GetFeature(uint32_t featureId) const;
-  FeatureType const & LoadFeature(uint32_t featureId) const;
   m2::PointD const & GetPoint(SegPoint const & vertex) const;
   SegPoint ResolveVertex(uint32_t featureId, uint32_t segId) const;
 
-  Index const & m_index;
-  // @TODO |m_testMwmId| is added for writing prototype. It should be removed. MwmId from |m_mwmLocks|
-  // should be used instead.
-  MwmSet::MwmId const m_testMwmId;
+  unique_ptr<FeaturePointsProvider> m_pointsProvider;
   map<uint64_t,shared_ptr<Joint>> m_joints;
-  mutable map<uint32_t,FeatureType> m_features;
 };
 }  // namespace routing
