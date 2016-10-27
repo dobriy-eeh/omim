@@ -89,7 +89,7 @@ void CheckRoute(JointGraph const & graph, SegPoint const & start, SegPoint const
   LOG(LINFO, ("Route", start, "=>", finish, "ok"));
 }
 
-void CheckRouteAndBack(JointGraph const & graph, SegPoint const & start, SegPoint const & finish, size_t expectedLength)
+void CheckRouteBothWays(JointGraph const & graph, SegPoint const & start, SegPoint const & finish, size_t expectedLength)
 {
   CheckRoute(graph,start,finish,expectedLength);
   CheckRoute(graph,finish,start,expectedLength);
@@ -101,7 +101,7 @@ void CheckRouteAllCombos(JointGraph const & graph, vector<SegPoint> const & ends
   {
     for ( auto const & finish: ends)
     {
-      CheckRouteAndBack(graph,start,finish, start == finish ? 1 : expectedLength);
+      CheckRouteBothWays(graph,start,finish, start == finish ? 1 : expectedLength);
     }
   }
 }
@@ -126,7 +126,7 @@ UNIT_TEST(FindPathCross)
 
   CheckRouteAllCombos(graph,{{0,0}, {0,4}, {1,0}, {1,4}}, 5);
   CheckRouteAllCombos(graph,{{0,1}, {0,3}, {1,1}, {1,3}}, 3);
-  CheckRouteAndBack(graph,{0,0}, {1,1}, 4);
+  CheckRouteBothWays(graph,{0,0}, {1,1}, 4);
 }
 
 //     R4  R5  R6  R7
@@ -163,21 +163,21 @@ UNIT_TEST(FindPathManhattan)
     {
       for ( uint32_t finish = start + 1; finish < 4; ++finish )
       {
-        CheckRouteAndBack(graph,{i,start}, {i,finish}, finish-start+1);
+        CheckRouteBothWays(graph,{i,start}, {i,finish}, finish-start+1);
       }
     }
   }
 
   for ( uint32_t i = 0; i < 3; ++i )
   {
-    CheckRouteAndBack(graph,{i,i}, {i+1,i+1}, 3);
-    CheckRouteAndBack(graph,{i,3-i}, {i+1,2-i}, 3);
+    CheckRouteBothWays(graph,{i,i}, {i+1,i+1}, 3);
+    CheckRouteBothWays(graph,{i,3-i}, {i+1,2-i}, 3);
   }
 
-  CheckRouteAndBack(graph,{0,0}, {3,3}, 7);
-  CheckRouteAndBack(graph,{3,0}, {0,3}, 7);
+  CheckRouteBothWays(graph,{0,0}, {3,3}, 7);
+  CheckRouteBothWays(graph,{3,0}, {0,3}, 7);
 
-  CheckRouteAndBack(graph,{0,1}, {2,2}, 4);
+  CheckRouteBothWays(graph,{0,1}, {2,2}, 4);
 }
 
 }  // namespace routing_test
