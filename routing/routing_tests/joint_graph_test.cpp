@@ -144,42 +144,50 @@ UNIT_TEST(FindPathCross)
 //
 UNIT_TEST(FindPathManhattan)
 {
+  uint32_t constexpr kCitySize = 4;
   unique_ptr<TestFeaturePointsProvider> provider = make_unique<TestFeaturePointsProvider>();
-  for ( uint32_t i = 0; i < 4; ++i )
+  for ( uint32_t i = 0; i < kCitySize; ++i )
   {
-    provider->AddRoad(i, {{(double)i, 0.0}, {(double)i, 1.0}, {(double)i, 2.0}, {(double)i, 3.0}});
-    provider->AddRoad(i+4, {{0.0, (double)i}, {1.0, (double)i}, {2.0, (double)i}, {3.0, (double)i}});
+    vector<m2::PointD> horizontalRoad;
+    vector<m2::PointD> verticalRoad;
+    for ( uint32_t j = 0; j < kCitySize; ++j )
+    {
+      horizontalRoad.push_back({(double)i, (double)j});
+      verticalRoad.push_back({(double)j, (double)i});
+    }
+    provider->AddRoad(i, horizontalRoad);
+    provider->AddRoad(i+kCitySize, verticalRoad);
   }
 
   JointGraph graph(move(provider));
 
-  for ( uint32_t i = 0; i < 4; ++i )
+  for ( uint32_t i = 0; i < kCitySize; ++i )
   {
-    for ( uint32_t j = 0; j < 4; ++j )
+    for ( uint32_t j = 0; j < kCitySize; ++j )
     {
-      graph.AddJoint(MakeJoint({{i,j},{j+4,i}}));
+      graph.AddJoint(MakeJoint({{i,j},{j+kCitySize,i}}));
     }
   }
 
-  for ( uint32_t i = 0; i < 8; ++i )
+  for ( uint32_t i = 0; i < kCitySize * 2; ++i )
   {
-    for ( uint32_t start = 0; start < 3; ++start )
+    for ( uint32_t start = 0; start < kCitySize - 1; ++start )
     {
-      for ( uint32_t finish = start + 1; finish < 4; ++finish )
+      for ( uint32_t finish = start + 1; finish < kCitySize; ++finish )
       {
         CheckRouteBothWays(graph,{i,start}, {i,finish}, finish-start+1);
       }
     }
   }
 
-  for ( uint32_t i = 0; i < 3; ++i )
+  for ( uint32_t i = 0; i < kCitySize-1; ++i )
   {
     CheckRouteBothWays(graph,{i,i}, {i+1,i+1}, 3);
-    CheckRouteBothWays(graph,{i,3-i}, {i+1,2-i}, 3);
+    CheckRouteBothWays(graph,{i,kCitySize-1-i}, {i+1,kCitySize-2-i}, 3);
   }
 
-  CheckRouteBothWays(graph,{0,0}, {3,3}, 7);
-  CheckRouteBothWays(graph,{3,0}, {0,3}, 7);
+  CheckRouteBothWays(graph,{0,0}, {kCitySize-1,kCitySize-1}, kCitySize*2-1);
+  CheckRouteBothWays(graph,{kCitySize-1,0}, {0,kCitySize-1}, kCitySize*2-1);
 
   CheckRouteBothWays(graph,{0,1}, {2,2}, 4);
 }
