@@ -74,19 +74,19 @@ shared_ptr<Joint> MakeJoint(vector<SegPoint> const & points)
 
 void CheckRoute(JointGraph const & graph, SegPoint const & start, SegPoint const & finish, size_t expectedLength)
 {
+  LOG(LINFO, ("Check route", start, "=>", finish));
+
   AStarAlgorithm<JointGraph> algorithm;
   RoutingResult<SegPoint> routingResult;
 
   auto onVisitFn = [](SegPoint const & from, SegPoint const & to)
   {
-    LOG(LINFO, ("Visited", from, "=>", to));
   };
 
-  AStarAlgorithm<JointGraph>::Result const resultCode = algorithm.FindPath(graph, start, finish, routingResult, {}, onVisitFn);
+  AStarAlgorithm<JointGraph>::Result const resultCode = algorithm.FindPath(graph, graph.ResolveVertex(start), graph.ResolveVertex(finish), routingResult, {}, onVisitFn);
 
-  TEST(resultCode == AStarAlgorithm<JointGraph>::Result::OK, (", start =", start,"finish=", finish));
-  TEST_EQUAL(routingResult.path.size(), expectedLength, (", start =", start,"finish=", finish));
-  LOG(LINFO, ("Route", start, "=>", finish, "ok"));
+  TEST_EQUAL(resultCode, AStarAlgorithm<JointGraph>::Result::OK, ());
+  TEST_EQUAL(routingResult.path.size(), expectedLength, ());
 }
 
 void CheckRouteBothWays(JointGraph const & graph, SegPoint const & start, SegPoint const & finish, size_t expectedLength)
@@ -168,6 +168,8 @@ UNIT_TEST(FindPathManhattan)
       graph.AddJoint(MakeJoint({{i,j},{j+kCitySize,i}}));
     }
   }
+
+  CheckRoute(graph,{4,0}, {4,1}, 2);
 
   for ( uint32_t i = 0; i < kCitySize * 2; ++i )
   {

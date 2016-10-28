@@ -81,7 +81,7 @@ IRouter::ResultCode AStarRouter::CalculateRoute(m2::PointD const & startPoint,
 
   RoutingResult<SegPoint> routingResult;
   AStarAlgorithm<JointGraph>::Result const resultCode = algorithm.FindPath(
-      graph, startVertex, finishVertex, routingResult, delegate, onVisitJunctionFn);
+      graph, graph.ResolveVertex(startVertex), graph.ResolveVertex(finishVertex), routingResult, delegate, onVisitJunctionFn);
 
   switch (resultCode) {
   case AStarAlgorithm<JointGraph>::Result::NoPath:

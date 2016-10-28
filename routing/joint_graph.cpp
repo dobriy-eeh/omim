@@ -83,6 +83,8 @@ JointGraph::JointGraph(unique_ptr<FeaturePointsProvider> pointsProvider)
 
 void JointGraph::GetOutgoingEdgesList(SegPoint const & vertexFrom, vector<SegEdge> & edges) const
 {
+  edges.clear();
+
   auto it = m_joints.find(vertexFrom.HashCode());
   if ( it != m_joints.end())
   {
@@ -140,6 +142,11 @@ void JointGraph::AddAdjacentVertexes(SegPoint const & vertex, vector<SegEdge> & 
     double const distance = HeuristicCostEstimate(vertex, nearbyVertex);
     edges.push_back(SegEdge(nearbyVertex, distance));
   }
+}
+
+SegPoint JointGraph::ResolveVertex(SegPoint const & vertex) const
+{
+  return ResolveVertex(vertex.GetFeatureId(), vertex.GetSegId());
 }
 
 SegPoint JointGraph::ResolveVertex(uint32_t featureId, uint32_t segId) const

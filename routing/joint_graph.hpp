@@ -181,6 +181,9 @@ public:
     }
   }
 
+  SegPoint ResolveVertex(SegPoint const & vertex) const;
+  SegPoint ResolveVertex(uint32_t featureId, uint32_t segId) const;
+
   template <class TSource>
   void Deserialize(TSource & src)
   {
@@ -197,7 +200,6 @@ public:
 private:
   void AddAdjacentVertexes(SegPoint const & vertex, vector<SegEdge> & edges) const;
   m2::PointD const & GetPoint(SegPoint const & vertex) const;
-  SegPoint ResolveVertex(uint32_t featureId, uint32_t segId) const;
 
   unique_ptr<FeaturePointsProvider> m_pointsProvider;
   map<uint64_t,shared_ptr<Joint>> m_joints;
