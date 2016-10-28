@@ -92,6 +92,9 @@ int main(int argc, char ** argv)
 
   google::ParseCommandLineFlags(&argc, &argv, true);
 
+  FLAGS_output = "Russia_Moscow";
+  FLAGS_generate_outgoing_edge_index = true;
+
   Platform & pl = GetPlatform();
 
   if (!FLAGS_user_resource_path.empty())
