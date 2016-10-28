@@ -6,11 +6,16 @@
 
 namespace
 {
-inline double CalcDistance(m2::PointD const & from, m2::PointD const & to)
+double constexpr kMPH2MPS = 1000.0 / (60 * 60);
+
+inline double TimeBetweenSec(m2::PointD const & from, m2::PointD const & to, double speedMPS)
 {
-  double const distance = MercatorBounds::DistanceOnEarth(from, to);
-  return distance;
+  ASSERT_GREATER(speedMPS, 0.0, ());
+
+  double const distanceM = MercatorBounds::DistanceOnEarth(from, to);
+  return distanceM / speedMPS / 1000000.0;
 }
+
 } // namespace
 
 namespace routing
@@ -113,7 +118,7 @@ void JointGraph::GetIngoingEdgesList(SegPoint const & vertex, vector<SegEdge> & 
 
 double JointGraph::HeuristicCostEstimate(SegPoint const & vertexFrom, SegPoint const & vertexTo) const
 {
-  return CalcDistance(GetPoint(vertexFrom), GetPoint(vertexTo));
+  return TimeBetweenSec(GetPoint(vertexFrom), GetPoint(vertexTo), 60.0 * kMPH2MPS);
 }
 
 vector<Junction> JointGraph::ConvertToGeometry(vector<SegPoint> const & vertexes) const
