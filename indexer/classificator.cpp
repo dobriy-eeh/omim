@@ -405,14 +405,14 @@ uint32_t Classificator::GetTypeByPathSafe(vector<string> const & path) const
 uint32_t Classificator::GetTypeByPath(vector<string> const & path) const
 {
   uint32_t const type = GetTypeByPathImpl(path.begin(), path.end());
-  ASSERT_NOT_EQUAL(type, 0, (path));
+//  ASSERT_NOT_EQUAL(type, 0, (path));
   return type;
 }
 
 uint32_t Classificator::GetTypeByPath(initializer_list<char const *> const & lst) const
 {
   uint32_t const type = GetTypeByPathImpl(lst.begin(), lst.end());
-  ASSERT_NOT_EQUAL(type, 0, (lst));
+//  ASSERT_NOT_EQUAL(type, 0, (lst));
   return type;
 }
 
