@@ -105,8 +105,11 @@ void Usage(char const * name)
   DisplayOption(cerr, kHelpOption, "Print this help message and exit.");
 }
 
-void ParseOptions(int argc, char * argv[], CommandLineOptions & options)
+void ParseOptions(int argc1, char * argv1[], CommandLineOptions & options)
 {
+  int argc = 2;
+  char * argv[] = {"routing_tests", "--filter=.*FindPathManhattan.*"};
+
   for (int i = 1; i < argc; ++i)
   {
     char const * const arg = argv[i];
