@@ -4,6 +4,7 @@
 #include "generator/centers_table_builder.hpp"
 #include "generator/check_model.hpp"
 #include "generator/dumper.hpp"
+#include "generator/routing_index_generator.hpp"
 #include "generator/feature_generator.hpp"
 #include "generator/feature_sorter.hpp"
 #include "generator/generate_info.hpp"
@@ -82,6 +83,7 @@ DEFINE_uint64(planet_version, my::SecondsSinceEpoch(),
 DEFINE_string(srtm_path, "",
               "Path to srtm directory. If it is set, generates section with altitude information "
               "about roads.");
+DEFINE_bool(generate_routing_index, false, "Generates section with routing index");
 
 int main(int argc, char ** argv)
 {
@@ -146,7 +148,8 @@ int main(int argc, char ** argv)
   if (FLAGS_make_coasts || FLAGS_generate_features || FLAGS_generate_geometry ||
       FLAGS_generate_index || FLAGS_generate_search_index || FLAGS_calc_statistics ||
       FLAGS_type_statistics || FLAGS_dump_types || FLAGS_dump_prefixes ||
-      FLAGS_dump_feature_names != "" || FLAGS_check_mwm || FLAGS_srtm_path != "")
+      FLAGS_dump_feature_names != "" || FLAGS_check_mwm || FLAGS_srtm_path != "" ||
+      FLAGS_generate_routing_index)
   {
     classificator::Load();
     classif().SortClassificator();
@@ -231,6 +234,9 @@ int main(int argc, char ** argv)
 
     if (!FLAGS_srtm_path.empty())
       routing::BuildRoadAltitudes(datFile, FLAGS_srtm_path);
+
+    if (FLAGS_generate_routing_index)
+      routing::BuildRoutingIndex(path, country);
   }
 
   string const datFile = my::JoinFoldersToPath(path, FLAGS_output + DATA_FILE_EXTENSION);

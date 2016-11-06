@@ -37,6 +37,7 @@ SOURCES += \
     osm_source.cpp \
     region_meta.cpp \
     routing_generator.cpp \
+    routing_index_generator.cpp \
     search_index_builder.cpp \
     sponsored_scoring.cpp \
     srtm_parser.cpp \
@@ -74,6 +75,7 @@ HEADERS += \
     polygonizer.hpp \
     region_meta.hpp \
     routing_generator.hpp \
+    routing_index_generator.hpp \
     search_index_builder.hpp \
     sponsored_dataset.hpp \
     sponsored_dataset_inl.hpp \
