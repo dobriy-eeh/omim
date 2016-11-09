@@ -60,7 +60,7 @@ AStarRouter::AStarRouter(const char * name, Index const & index,
   ASSERT(m_directionsEngine, ());
 }
 
-string AStarRouter::GetName() const { return "AStar"; }
+string AStarRouter::GetName() const { return m_name; }
 
 IRouter::ResultCode AStarRouter::CalculateRoute(m2::PointD const & startPoint,
                                                 m2::PointD const & /* startDirection */,
