@@ -19,7 +19,7 @@ void FSegIndex::Export(vector<Joint> const & joints)
 pair<JointId, uint32_t> FSegIndex::FindNeigbor(FSegId fseg, bool forward) const
 {
   auto const it = m_roads.find(fseg.GetFeatureId());
-  if (it == m_roads.end())
+  if (it == m_roads.cend())
     return make_pair(kInvalidJointId, 0);
 
   RoadJointIds const & joints = it->second;

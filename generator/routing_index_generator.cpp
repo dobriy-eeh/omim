@@ -19,6 +19,7 @@
 
 #include "base/logging.hpp"
 
+#include "std/shared_ptr.hpp"
 #include "std/unique_ptr.hpp"
 #include "std/unordered_map.hpp"
 #include "std/vector.hpp"
@@ -61,11 +62,6 @@ public:
       return;
 
     uint32_t const id = f.GetID().m_index;
-    if (m_featuresCount != 0 && m_featuresCount % 10000 == 0)
-      LOG(LINFO, ("featureId =", id, "processed", m_featuresCount));
-
-    ++m_featuresCount;
-
     f.ParseGeometry(FeatureType::BEST_GEOMETRY);
     size_t const pointsCount = f.GetPointsCount();
     if (pointsCount == 0)
@@ -112,7 +108,6 @@ private:
   shared_ptr<IVehicleModel> m_bicycleModel;
   shared_ptr<IVehicleModel> m_carModel;
   unordered_map<uint64_t, Joint> m_pos2Joint;
-  size_t m_featuresCount = 0;
 };
 }  // namespace
 

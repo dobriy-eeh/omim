@@ -18,7 +18,7 @@ class IndexGraph;
 class AStarRouter : public IRouter
 {
 public:
-  AStarRouter(Index const & index, TCountryFileFn const & countryFileFn,
+  AStarRouter(const char * name, Index const & index, TCountryFileFn const & countryFileFn,
               shared_ptr<VehicleModelFactory> vehicleModelFactory,
               unique_ptr<IDirectionsEngine> directionsEngine);
 
@@ -29,12 +29,13 @@ public:
                             Route & route) override;
 
 private:
-  bool FindClosestEdge(Edge & closestEdge, m2::PointD const & point) const;
-  bool LoadIndex(IndexGraph & graph, MwmSet::MwmId const & mwmId);
+  bool FindClosestEdge(m2::PointD const & point, Edge & closestEdge) const;
+  bool LoadIndex(MwmSet::MwmId const & mwmId, IndexGraph & graph);
 
+  string m_name;
   Index const & m_index;
   TCountryFileFn m_countryFileFn;
-  shared_ptr<IRoadGraph> m_roadGraph;
+  unique_ptr<IRoadGraph> m_roadGraph;
   shared_ptr<VehicleModelFactory> m_vehicleModelFactory;
   unique_ptr<IDirectionsEngine> m_directionsEngine;
 };

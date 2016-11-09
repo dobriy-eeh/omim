@@ -36,5 +36,5 @@ private:
   uint32_t m_reserved32;
 };
 
-static_assert(sizeof(RoutingSectionHeader) == 8, "Wrong header size of edge index section.");
+static_assert(sizeof(RoutingSectionHeader) == 8, "Wrong header size of routing section.");
 }  // namespace feature

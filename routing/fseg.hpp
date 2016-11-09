@@ -15,8 +15,7 @@ class FSegId final
 public:
   static FSegId MakeInvalid() { return FSegId(kInvalidFeatureId, 0); }
 
-  FSegId() = default;
-  FSegId(const FSegId &) = default;
+  FSegId() : m_featureId(kInvalidFeatureId), m_segId(0) {}
 
   FSegId(uint32_t featureId, uint32_t segId) : m_featureId(featureId), m_segId(segId) {}
 

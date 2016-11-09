@@ -3,7 +3,13 @@
 #include "routing/base/astar_algorithm.hpp"
 #include "routing/index_graph.hpp"
 
+#include "geometry/point2d.hpp"
+
 #include "base/assert.hpp"
+
+#include "std/algorithm.hpp"
+#include "std/map.hpp"
+#include "std/vector.hpp"
 
 namespace
 {
@@ -59,6 +65,7 @@ double TestGeometry::CalcEdgesWeight(uint32_t featureId, uint32_t pointFrom, uin
 
   uint32_t const start = min(pointFrom, pointTo);
   uint32_t const finish = max(pointFrom, pointTo);
+  ASSERT_LESS(finish, points.size(), ());
 
   double result = 0.0;
   for (uint32_t i = start; i < finish; ++i)

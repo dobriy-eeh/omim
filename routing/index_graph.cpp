@@ -39,7 +39,7 @@ JointId IndexGraph::InsertJoint(FSegId fseg)
     return existId;
 
   JointId const jointId = m_jointOffsets.size();
-  m_jointOffsets.emplace_back(JointOffset(m_fsegs.size(), m_fsegs.size()));
+  m_jointOffsets.emplace_back(JointOffset(m_fsegs.size(), m_fsegs.size() + 1));
   m_fsegs.emplace_back(fseg);
   m_fsegIndex.AddJoint(fseg, jointId);
   return jointId;
@@ -141,7 +141,14 @@ void IndexGraph::BuildJoints(uint32_t jointsAmount)
 
   uint32_t offset = 0;
   for (size_t i = 0; i < m_jointOffsets.size(); ++i)
-    offset += m_jointOffsets[i].Shift(offset);
+  {
+    JointOffset & jointOffset = m_jointOffsets[i];
+    uint32_t const size = jointOffset.Size();
+    ASSERT_GREATER(size, 0, ());
+
+    jointOffset.Assign(offset);
+    offset += size;
+  }
 
   // +2 is reserved space for start and finish
   m_fsegs.reserve(offset + 2);

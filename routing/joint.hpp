@@ -51,8 +51,7 @@ private:
 class JointOffset final
 {
 public:
-  JointOffset() = default;
-  JointOffset(JointOffset const &) = default;
+  JointOffset() : m_begin(0), m_end(0) {}
 
   JointOffset(uint32_t begin, uint32_t end) : m_begin(begin), m_end(end) {}
 
@@ -60,12 +59,12 @@ public:
 
   uint32_t End() const { return m_end; }
 
-  uint32_t Shift(uint32_t offset)
+  uint32_t Size() const { return m_end - m_begin; }
+
+  void Assign(uint32_t offset)
   {
-    uint32_t const size = m_end;
     m_begin = offset;
     m_end = offset;
-    return size;
   }
 
   void IncSize() { ++m_end; }

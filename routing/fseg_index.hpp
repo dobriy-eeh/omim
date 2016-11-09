@@ -43,14 +43,13 @@ public:
   }
 
   size_t GetSize() const { return m_jointIds.size(); }
+
   template <class TSink>
   void Serialize(TSink & sink) const
   {
     WriteToSink(sink, static_cast<JointId>(m_jointIds.size()));
     for (JointId jointId : m_jointIds)
-    {
       WriteToSink(sink, jointId);
-    }
   }
 
   template <class TSource>
@@ -120,12 +119,11 @@ public:
   void ForEachRoad(F && f) const
   {
     for (auto it = m_roads.begin(); it != m_roads.end(); ++it)
-    {
       f(it->first, it->second);
-    }
   }
 
 private:
+  // map from feature id to RoadJointIds.
   unordered_map<uint32_t, RoadJointIds> m_roads;
 };
 }  // namespace routing
