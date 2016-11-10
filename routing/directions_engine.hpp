@@ -30,5 +30,5 @@ protected:
 };
 
 void ReconstructRoute(IDirectionsEngine * engine, IRoadGraph const & graph,
-                      vector<Junction> && path, Route & route, my::Cancellable const & cancellable);
+                      my::Cancellable const & cancellable, vector<Junction> & path, Route & route);
 }  // namespace routing

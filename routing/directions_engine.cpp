@@ -89,7 +89,7 @@ bool IDirectionsEngine::ReconstructPath(IRoadGraph const & graph, vector<Junctio
 }
 
 void ReconstructRoute(IDirectionsEngine * engine, IRoadGraph const & graph,
-                      vector<Junction> && path, Route & route, my::Cancellable const & cancellable)
+                      my::Cancellable const & cancellable, vector<Junction> & path, Route & route)
 {
   CHECK(!path.empty(), ("Can't reconstruct route from an empty list of positions."));
 

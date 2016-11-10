@@ -111,7 +111,7 @@ IRouter::ResultCode AStarRouter::CalculateRoute(m2::PointD const & startPoint,
   case AStarAlgorithm<IndexGraph>::Result::Cancelled: return IRouter::Cancelled;
   case AStarAlgorithm<IndexGraph>::Result::OK:
     vector<Junction> path = ConvertToJunctions(graph, routingResult.path);
-    ReconstructRoute(m_directionsEngine.get(), *m_roadGraph, move(path), route, delegate);
+    ReconstructRoute(m_directionsEngine.get(), *m_roadGraph, delegate, path, route);
     return IRouter::NoError;
   }
 }

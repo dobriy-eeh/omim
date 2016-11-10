@@ -1,5 +1,7 @@
 #include "fseg_index.hpp"
 
+#include "std/utility.hpp"
+
 namespace routing
 {
 void FSegIndex::Export(vector<Joint> const & joints)
