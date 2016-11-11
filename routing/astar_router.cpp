@@ -60,26 +60,25 @@ AStarRouter::AStarRouter(const char * name, Index const & index,
   ASSERT(m_directionsEngine, ());
 }
 
-string AStarRouter::GetName() const { return m_name; }
-
-IRouter::ResultCode AStarRouter::CalculateRoute(m2::PointD const & startPoint,
+IRouter::ResultCode AStarRouter::CalculateRoute(MwmSet::MwmId const & mwmId,
+                                                m2::PointD const & startPoint,
                                                 m2::PointD const & /* startDirection */,
                                                 m2::PointD const & finalPoint,
                                                 RouterDelegate const & delegate, Route & route)
 {
+  string const country = m_countryFileFn(startPoint);
+
   Edge startEdge = Edge::MakeFake({} /* startJunction */, {} /* endJunction */);
-  if (!FindClosestEdge(startPoint, startEdge))
+  if (!FindClosestEdge(mwmId, startPoint, startEdge))
     return IRouter::StartPointNotFound;
 
   Edge finishEdge = Edge::MakeFake({} /* startJunction */, {} /* endJunction */);
-  if (!FindClosestEdge(finalPoint, finishEdge))
+  if (!FindClosestEdge(mwmId, finalPoint, finishEdge))
     return IRouter::EndPointNotFound;
 
   FSegId const start(startEdge.GetFeatureId().m_index, startEdge.GetSegId());
   FSegId const finish(finishEdge.GetFeatureId().m_index, finishEdge.GetSegId());
 
-  string const country = m_countryFileFn(startPoint);
-  MwmSet::MwmId const mwmId(m_index.GetMwmIdByCountryFile(platform::CountryFile(country)));
   IndexGraph graph(
       CreateGeometry(m_index, mwmId, m_vehicleModelFactory->GetVehicleModelForCountry(country)));
 
@@ -116,7 +115,8 @@ IRouter::ResultCode AStarRouter::CalculateRoute(m2::PointD const & startPoint,
   }
 }
 
-bool AStarRouter::FindClosestEdge(m2::PointD const & point, Edge & closestEdge) const
+bool AStarRouter::FindClosestEdge(MwmSet::MwmId const & mwmId, m2::PointD const & point,
+                                  Edge & closestEdge) const
 {
   vector<pair<Edge, Junction>> candidates;
   m_roadGraph->FindClosestEdges(point, kMaxRoadCandidates, candidates);
@@ -127,6 +127,9 @@ bool AStarRouter::FindClosestEdge(m2::PointD const & point, Edge & closestEdge) 
   for (size_t i = 0; i < candidates.size(); ++i)
   {
     Edge const & edge = candidates[i].first;
+    if (edge.GetFeatureId().m_mwmId != mwmId)
+      continue;
+
     m2::DistanceToLineSquare<m2::PointD> squareDistance;
     squareDistance.SetBounds(edge.GetStartJunction().GetPoint(), edge.GetEndJunction().GetPoint());
     double const distance = squareDistance(point);
@@ -175,14 +178,14 @@ bool AStarRouter::LoadIndex(MwmSet::MwmId const & mwmId, IndexGraph & graph)
   }
 }
 
-unique_ptr<IRouter> CreateCarAStarBidirectionalRouter(Index & index,
-                                                      TCountryFileFn const & countryFileFn)
+unique_ptr<AStarRouter> CreateCarAStarBidirectionalRouter(Index & index,
+                                                          TCountryFileFn const & countryFileFn)
 {
   shared_ptr<VehicleModelFactory> vehicleModelFactory = make_shared<CarModelFactory>();
   // @TODO Bicycle turn generation engine is used now. It's ok for the time being.
   // But later a special car turn generation engine should be implemented.
   unique_ptr<IDirectionsEngine> directionsEngine = make_unique<BicycleDirectionsEngine>(index);
-  unique_ptr<IRouter> router =
+  unique_ptr<AStarRouter> router =
       make_unique<AStarRouter>("astar-bidirectional-car", index, countryFileFn,
                                move(vehicleModelFactory), move(directionsEngine));
   return router;

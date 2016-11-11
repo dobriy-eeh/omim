@@ -244,8 +244,8 @@ bool CarRouter::CheckRoutingAbility(m2::PointD const & startPoint, m2::PointD co
 }
 
 CarRouter::CarRouter(Index & index, TCountryFileFn const & countryFileFn,
-                     unique_ptr<IRouter> router)
-  : m_index(index), m_indexManager(countryFileFn, index), m_router(move(router))
+                     unique_ptr<AStarRouter> localRouter)
+  : m_index(index), m_indexManager(countryFileFn, index), m_router(move(localRouter))
 {
 }
 
@@ -256,11 +256,6 @@ void CarRouter::ClearState()
   m_cachedTargets.clear();
   m_cachedTargetPoint = m2::PointD::Zero();
   m_indexManager.Clear();
-
-  if (m_router)
-    m_router->ClearState();
-  else
-    LOG(LERROR, ("m_router is not initialized."));
 }
 
 bool CarRouter::FindRouteMSMT(TFeatureGraphNodeVec const & sources,

@@ -15,21 +15,23 @@ namespace routing
 {
 class IndexGraph;
 
-class AStarRouter : public IRouter
+class AStarRouter
 {
 public:
   AStarRouter(const char * name, Index const & index, TCountryFileFn const & countryFileFn,
               shared_ptr<VehicleModelFactory> vehicleModelFactory,
               unique_ptr<IDirectionsEngine> directionsEngine);
 
-  // IRouter overrides:
-  string GetName() const override;
-  ResultCode CalculateRoute(m2::PointD const & startPoint, m2::PointD const & startDirection,
-                            m2::PointD const & finalPoint, RouterDelegate const & delegate,
-                            Route & route) override;
+  string const & AStarRouter::GetName() const { return m_name; }
+
+  IRouter::ResultCode CalculateRoute(MwmSet::MwmId const & mwmId, m2::PointD const & startPoint,
+                                     m2::PointD const & startDirection,
+                                     m2::PointD const & finalPoint, RouterDelegate const & delegate,
+                                     Route & route);
 
 private:
-  bool FindClosestEdge(m2::PointD const & point, Edge & closestEdge) const;
+  bool FindClosestEdge(MwmSet::MwmId const & mwmId, m2::PointD const & point,
+                       Edge & closestEdge) const;
   bool LoadIndex(MwmSet::MwmId const & mwmId, IndexGraph & graph);
 
   string m_name;
@@ -40,6 +42,6 @@ private:
   unique_ptr<IDirectionsEngine> m_directionsEngine;
 };
 
-unique_ptr<IRouter> CreateCarAStarBidirectionalRouter(Index & index,
-                                                      TCountryFileFn const & countryFileFn);
+unique_ptr<AStarRouter> CreateCarAStarBidirectionalRouter(Index & index,
+                                                          TCountryFileFn const & countryFileFn);
 }  // namespace routing
