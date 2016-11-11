@@ -22,7 +22,7 @@ public:
               shared_ptr<VehicleModelFactory> vehicleModelFactory,
               unique_ptr<IDirectionsEngine> directionsEngine);
 
-  string const & AStarRouter::GetName() const { return m_name; }
+  string const & GetName() const { return m_name; }
 
   IRouter::ResultCode CalculateRoute(MwmSet::MwmId const & mwmId, m2::PointD const & startPoint,
                                      m2::PointD const & startDirection,

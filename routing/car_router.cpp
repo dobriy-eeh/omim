@@ -565,10 +565,11 @@ IRouter::ResultCode CarRouter::FindSingleRouteDispatcher(FeatureGraphNode const 
       LOG(LERROR, ("m_router is not initialized."));
       return IRouter::InternalError;
     }
-    LOG(LINFO, (m_router->GetName(), "route from", MercatorBounds::ToLatLon(source.segmentPoint), "to",
-                MercatorBounds::ToLatLon(target.segmentPoint)));
-    result = m_router->CalculateRoute(source.segmentPoint, m2::PointD(0, 0) /* direction */,
-                                      target.segmentPoint, delegate, mwmRoute);
+    LOG(LINFO, (m_router->GetName(), "route from", MercatorBounds::ToLatLon(source.segmentPoint),
+                "to", MercatorBounds::ToLatLon(target.segmentPoint)));
+    result = m_router->CalculateRoute(source.mwmId, source.segmentPoint,
+                                      m2::PointD(0, 0) /* direction */, target.segmentPoint,
+                                      delegate, mwmRoute);
   }
   else
   {
