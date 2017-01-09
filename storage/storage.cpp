@@ -277,7 +277,7 @@ void Storage::RegisterAllLocalMaps()
     else
       RegisterFakeCountryFiles(localFile);
 
-    LOG(LINFO, ("Found file:", name, "in directory:", localFile.GetDirectory()));
+//    LOG(LINFO, ("Found file:", name, "in directory:", localFile.GetDirectory()));
 
     i = j;
   }

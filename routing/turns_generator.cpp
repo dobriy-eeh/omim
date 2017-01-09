@@ -303,9 +303,9 @@ IRouter::ResultCode MakeTurnAnnotation(turns::IRoutingResult const & result,
       double distMeters = 0.0;
       for (size_t k = lastIdx + 1; k < junctions.size(); ++k)
         distMeters += MercatorBounds::DistanceOnEarth(junctions[k - 1].GetPoint(), junctions[k].GetPoint());
-      LOG(LDEBUG, ("Speed:", 3.6 * distMeters / nodeTimeSeconds, "kmph; Dist:", distMeters, "Time:",
-                   nodeTimeSeconds, "s", lastIdx, "e", junctions.size(), "source:",
-                   turnItem.m_sourceName, "target:", turnItem.m_targetName));
+//      LOG(LDEBUG, ("Speed:", 3.6 * distMeters / nodeTimeSeconds, "kmph; Dist:", distMeters, "Time:",
+//                   nodeTimeSeconds, "s", lastIdx, "e", junctions.size(), "source:",
+//                   turnItem.m_sourceName, "target:", turnItem.m_targetName));
       lastIdx = junctions.size();
 #endif
       times.push_back(Route::TTimeItem(junctions.size(), estimatedTime));
@@ -345,8 +345,8 @@ IRouter::ResultCode MakeTurnAnnotation(turns::IRoutingResult const & result,
 #ifdef DEBUG
   for (auto t : turnsDir)
   {
-    LOG(LDEBUG, (turns::GetTurnString(t.m_turn), ":", t.m_index, t.m_sourceName, "-",
-                 t.m_targetName, "exit:", t.m_exitNum));
+//    LOG(LDEBUG, (turns::GetTurnString(t.m_turn), ":", t.m_index, t.m_sourceName, "-",
+//                 t.m_targetName, "exit:", t.m_exitNum));
   }
 
   size_t last = 0;
@@ -359,8 +359,8 @@ IRouter::ResultCode MakeTurnAnnotation(turns::IRoutingResult const & result,
 
     double time = t.second - lastTime;
 
-    LOG(LDEBUG, ("distance:", dist, "start:", last, "end:", t.first, "Time:", time, "Speed:",
-                 3.6 * dist / time));
+//    LOG(LDEBUG, ("distance:", dist, "start:", last, "end:", t.first, "Time:", time, "Speed:",
+//                 3.6 * dist / time));
     last = t.first;
     lastTime = t.second;
   }

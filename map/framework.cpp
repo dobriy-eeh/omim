@@ -204,7 +204,7 @@ string MakeSearchBookingUrl(Index const & index, booking::Api const & bookingApi
 pair<MwmSet::MwmId, MwmSet::RegResult> Framework::RegisterMap(
     LocalCountryFile const & localFile)
 {
-  LOG(LINFO, ("Loading map:", localFile.GetCountryName()));
+//  LOG(LINFO, ("Loading map:", localFile.GetCountryName()));
   return m_model.RegisterMap(localFile);
 }
 
