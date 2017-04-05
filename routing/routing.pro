@@ -91,6 +91,7 @@ HEADERS += \
     joint.hpp \
     joint_index.hpp \
     loaded_path_segment.hpp \
+    mwm_neighbors.hpp \
     nearest_edge_finder.hpp \
     num_mwm_id.hpp \
     online_absent_fetcher.hpp \

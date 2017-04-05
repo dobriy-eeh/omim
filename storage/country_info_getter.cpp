@@ -76,6 +76,40 @@ vector<TCountryId> CountryInfoGetter::GetRegionsCountryIdByRect(m2::RectD const 
   return result;
 }
 
+vector<TCountryId> CountryInfoGetter::GetNeighbors(TCountryId const & countryId) const
+{
+  auto it = m_countryIndex.find(countryId);
+  CHECK(it != m_countryIndex.cend(), ("Can't find country id", countryId));
+
+  size_t const targetId = it->second;
+  ASSERT_LESS(targetId, m_countries.size(), ());
+  CountryDef const & target = m_countries[targetId];
+
+  size_t constexpr kAverageSize = 10;
+  vector<TCountryId> result;
+  result.reserve(kAverageSize);
+
+  for (size_t neighborId = 0; neighborId < m_countries.size(); ++neighborId)
+  {
+    if (neighborId == targetId)
+      continue;
+
+    CountryDef const & neighbor = m_countries[neighborId];
+
+    if (!target.m_rect.IsIntersect(neighbor.m_rect))
+      continue;
+
+//    if (!IsIntersectedByRegionImpl(neighborId, target.m_rect))
+//      continue;
+
+//    if (!IsIntersectedByRegionImpl(targetId, neighbor.m_rect))
+//      continue;
+
+    result.push_back(neighbor.m_countryId);
+  }
+  return result;
+}
+
 void CountryInfoGetter::GetRegionsCountryId(m2::PointD const & pt, TCountriesVec & closestCoutryIds)
 {
   double const kLookupRadiusM = 30 /* km */ * 1000;

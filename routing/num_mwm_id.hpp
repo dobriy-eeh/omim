@@ -54,6 +54,8 @@ public:
       f(id);
   }
 
+  size_t GetSize() const { return m_idToFile.size(); }
+
 private:
   std::vector<platform::CountryFile> m_idToFile;
   std::map<platform::CountryFile, NumMwmId> m_fileToId;

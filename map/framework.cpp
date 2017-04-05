@@ -11,6 +11,7 @@
 
 #include "routing/car_router.hpp"
 #include "routing/index_router.hpp"
+#include "routing/mwm_neighbors.hpp"
 #include "routing/num_mwm_id.hpp"
 #include "routing/online_absent_fetcher.hpp"
 #include "routing/road_graph_router.hpp"
@@ -2559,6 +2560,18 @@ void Framework::SetRouterImpl(RouterType type)
     auto numMwmIds = make_shared<routing::NumMwmIds>();
     m_storage.ForEachCountryFile(
         [&](platform::CountryFile const & file) { numMwmIds->RegisterFile(file); });
+
+    my::Timer timer;
+    // TODO pass mwmNeighbors to router
+    auto mwmNeighbors = make_unique<MwmNeighbors>(*numMwmIds, [this](string const & countryName){
+      return m_infoGetter->GetNeighbors(countryName);
+    });
+
+    // REMOVE IT
+
+    LOG(LINFO, ("elapsed:", timer.ElapsedSeconds(), "seconds"));
+    auto const & a = *numMwmIds;
+    auto const & b = *mwmNeighbors;
 
     router.reset(
         new CarRouter(m_model.GetIndex(), countryFileGetter,

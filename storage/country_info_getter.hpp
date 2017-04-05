@@ -40,6 +40,8 @@ public:
   // countries belong to |rect|.
   vector<TCountryId> GetRegionsCountryIdByRect(m2::RectD const & rect) const;
 
+  vector<TCountryId> GetNeighbors(TCountryId const & countryId) const;
+
   // Returns a list of country ids by a |pt| in mercator.
   // |closestCoutryIds| is filled with country ids of mwm which covers |pt| or close to it.
   // |closestCoutryIds| is not filled with country world.mwm country id and with custom mwm.
