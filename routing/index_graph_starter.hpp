@@ -24,34 +24,31 @@ public:
   class FakeVertex final
   {
   public:
+    // For unit tests only.
     FakeVertex(NumMwmId mwmId, uint32_t featureId, uint32_t segmentIdx, m2::PointD const & point)
       : m_segment(mwmId, featureId, segmentIdx, true /* forward */)
-      , m_junction(point, feature::kDefaultAltitudeMeters)
+      , m_originJunction(point, feature::kDefaultAltitudeMeters)
+      , m_projectedJunction(point, feature::kDefaultAltitudeMeters)
     {
     }
 
-    FakeVertex(Segment const & segment, m2::PointD const & point, bool strictForward)
+    FakeVertex(Segment const & segment, Junction const & originJunction,
+               Junction const & projectedJunction, bool strictForward)
       : m_segment(segment)
-      , m_junction(point, feature::kDefaultAltitudeMeters)
+      , m_originJunction(originJunction)
+      , m_projectedJunction(projectedJunction)
       , m_strictForward(strictForward)
-    {
-    }
-
-    FakeVertex(Segment const & segment, Junction const & junction, bool strictForward)
-      : m_segment(segment), m_junction(junction), m_strictForward(strictForward)
     {
     }
 
     NumMwmId GetMwmId() const { return m_segment.GetMwmId(); }
     uint32_t GetFeatureId() const { return m_segment.GetFeatureId(); }
-    Junction const & GetJunction() const { return m_junction; }
-    m2::PointD const & GetPoint() const { return m_junction.GetPoint(); }
+
     Segment const & GetSegment() const { return m_segment; }
 
     Segment GetSegmentWithDirection(bool forward) const
     {
-      return Segment(m_segment.GetMwmId(), m_segment.GetFeatureId(), m_segment.GetSegmentIdx(),
-                     forward);
+      return {m_segment.GetMwmId(), m_segment.GetFeatureId(), m_segment.GetSegmentIdx(), forward};
     }
 
     bool Fits(Segment const & segment) const
@@ -65,9 +62,17 @@ public:
     uint32_t GetSegmentIdxForTesting() const { return m_segment.GetSegmentIdx(); }
     bool GetStrictForward() const { return m_strictForward; }
 
+    Junction const & GetOriginJunction() const { return m_originJunction; }
+    m2::PointD const & GetOriginPoint() const { return m_originJunction.GetPoint(); }
+    Junction const & GetProjectedJunction() const { return m_projectedJunction; }
+    m2::PointD const & GetProjectedPoint() const { return m_projectedJunction.GetPoint(); }
+
   private:
     Segment m_segment;
-    Junction m_junction;
+    // The junction from the user input.
+    Junction m_originJunction;
+    // Projection of origin junction to the segment.
+    Junction m_projectedJunction;
     // This flag specifies which fake edges should be placed from the fake vertex.
     // true: place exactly one fake edge to the m_segment with indicated m_forward.
     // false: place two fake edges to the m_segment with both directions.

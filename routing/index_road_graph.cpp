@@ -9,13 +9,13 @@ IndexRoadGraph::IndexRoadGraph(shared_ptr<NumMwmIds> numMwmIds, IndexGraphStarte
                                Index & index)
   : m_index(index), m_numMwmIds(numMwmIds), m_starter(starter), m_segments(segments)
 {
-  CHECK_EQUAL(segments.size(), junctions.size() + 1, ());
+  CHECK_EQUAL(segments.size() + 1, junctions.size(), ());
 
-  for (size_t i = 0; i < junctions.size(); ++i)
+  for (size_t i = 0; i < segments.size(); ++i)
   {
-    Junction const & junction = junctions[i];
-    m_endToSegment[junction].push_back(segments[i]);
-    m_beginToSegment[junction].push_back(segments[i + 1]);
+    Segment const & segment = segments[i];
+    m_endToSegment[junctions[i]].push_back(segment);
+    m_beginToSegment[junctions[i + 1]].push_back(segment);
   }
 }
 
@@ -127,10 +127,10 @@ void IndexRoadGraph::GetEdges(Junction const & junction, bool isOutgoing, TEdgeV
 Junction const & IndexRoadGraph::GetJunction(Segment const & segment, bool front) const
 {
   if (!front && m_starter.FitsStart(segment))
-    return m_starter.GetStartVertex().GetJunction();
+    return m_starter.GetStartVertex().GetProjectedJunction();
 
   if (front && m_starter.FitsFinish(segment))
-    return m_starter.GetFinishVertex().GetJunction();
+    return m_starter.GetFinishVertex().GetProjectedJunction();
 
   return m_starter.GetJunction(segment, front);
 }

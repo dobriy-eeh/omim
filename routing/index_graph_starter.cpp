@@ -6,15 +6,6 @@ namespace
 {
 using namespace routing;
 using namespace std;
-
-Junction CalcProjectionToSegment(Segment const & segment, Junction const & junction,
-                                 WorldGraph & graph)
-{
-  m2::ProjectionToSection<m2::PointD> projection;
-  projection.SetBounds(graph.GetPoint(segment, false /* front */),
-                       graph.GetPoint(segment, true /* front */));
-  return Junction(projection(junction.GetPoint()), junction.GetAltitude());
-}
 }  // namespace
 
 namespace routing
@@ -25,23 +16,17 @@ Segment constexpr IndexGraphStarter::kFinishFakeSegment;
 
 IndexGraphStarter::IndexGraphStarter(FakeVertex const & start, FakeVertex const & finish,
                                      WorldGraph & graph)
-  : m_graph(graph)
-  , m_start(start.GetSegment(),
-            CalcProjectionToSegment(start.GetSegment(), start.GetJunction(), graph),
-            start.GetStrictForward())
-  , m_finish(finish.GetSegment(),
-             CalcProjectionToSegment(finish.GetSegment(), finish.GetJunction(), graph),
-             finish.GetStrictForward())
+  : m_graph(graph), m_start(start), m_finish(finish)
 {
 }
 
 Junction const & IndexGraphStarter::GetJunction(Segment const & segment, bool front)
 {
   if (segment == kStartFakeSegment)
-    return m_start.GetJunction();
+    return m_start.GetProjectedJunction();
 
   if (segment == kFinishFakeSegment)
-    return m_finish.GetJunction();
+    return m_finish.GetProjectedJunction();
 
   return m_graph.GetJunction(segment, front);
 }
@@ -57,8 +42,9 @@ void IndexGraphStarter::CheckValidRoute(vector<Segment> const &segments)
   // Valid route contains at least 3 segments:
   // start fake, finish fake and at least one normal nearest segment.
   CHECK_GREATER_OR_EQUAL(segments.size(), 3, ());
-  CHECK_EQUAL(segments.front(), kStartFakeSegment, ());
-  CHECK_EQUAL(segments.back(), kFinishFakeSegment, ());
+  CHECK(segments.front() == kStartFakeSegment || segments.front() == segments[1], ());
+  CHECK(segments.back() == kFinishFakeSegment || segments.back() == segments[segments.size() - 2],
+        ());
 }
 
 // static
@@ -81,20 +67,26 @@ vector<Segment>::const_iterator IndexGraphStarter::GetNonFakeFinishIt(vector<Seg
 size_t IndexGraphStarter::GetRouteNumPoints(vector<Segment> const & segments)
 {
   CheckValidRoute(segments);
-  return segments.size() - 1;
+  return segments.size() + 1;
 }
 
 Junction const & IndexGraphStarter::GetRouteJunction(vector<Segment> const & segments,
                                                      size_t pointIndex)
 {
   if (pointIndex == 0)
-    return m_start.GetJunction();
+    return m_start.GetOriginJunction();
+
+  if (pointIndex == 1)
+    return m_start.GetProjectedJunction();
+
+  if (pointIndex + 2 == GetRouteNumPoints(segments))
+    return m_finish.GetProjectedJunction();
 
   if (pointIndex + 1 == GetRouteNumPoints(segments))
-    return m_finish.GetJunction();
+    return m_finish.GetOriginJunction();
 
   CHECK_LESS(pointIndex, segments.size(), ());
-  return GetJunction(segments[pointIndex], true /* front */);
+  return GetJunction(segments[pointIndex], false /* front */);
 }
 
 void IndexGraphStarter::GetEdgesList(Segment const & segment, bool isOutgoing,
@@ -146,7 +138,8 @@ void IndexGraphStarter::GetFakeToNormalEdge(FakeVertex const & fakeVertex, bool 
 {
   auto const segment = fakeVertex.GetSegmentWithDirection(forward);
   m2::PointD const & pointTo = GetPoint(segment, true /* front */);
-  RouteWeight const weight(m_graph.GetEstimator().CalcLeapWeight(fakeVertex.GetPoint(), pointTo));
+  RouteWeight const weight(
+      m_graph.GetEstimator().CalcLeapWeight(fakeVertex.GetProjectedPoint(), pointTo));
   edges.emplace_back(segment, weight);
 }
 
@@ -161,7 +154,7 @@ void IndexGraphStarter::GetNormalToFakeEdge(Segment const & segment, FakeVertex 
     if (m_graph.IsTransition(segment, isOutgoing))
     {
       edges.emplace_back(fakeSegment, RouteWeight(m_graph.GetEstimator().CalcLeapWeight(
-                                          pointFrom, fakeVertex.GetPoint())));
+                                          pointFrom, fakeVertex.GetProjectedPoint())));
     }
     return;
   }
@@ -169,7 +162,7 @@ void IndexGraphStarter::GetNormalToFakeEdge(Segment const & segment, FakeVertex 
   if (fakeVertex.Fits(segment))
   {
     edges.emplace_back(fakeSegment, RouteWeight(m_graph.GetEstimator().CalcLeapWeight(
-                                        pointFrom, fakeVertex.GetPoint())));
+                                        pointFrom, fakeVertex.GetProjectedPoint())));
   }
 }
 

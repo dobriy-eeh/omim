@@ -133,7 +133,7 @@ void ReconstructRoute(IDirectionsEngine & engine, RoadGraphBase const & graph,
               ("Size of path:", path.size(), "size of junctions:", junctions.size()));
 
   vector<RouteSegment> segmentInfo;
-  FillSegmentInfo(segments, junctions, turnsDir, streetNames, times, trafficStash, segmentInfo);
+  FillSegmentInfo(segments, path, turnsDir, streetNames, times, trafficStash, segmentInfo);
   CHECK_EQUAL(segmentInfo.size(), segments.size(), ());
   route.SetRouteSegments(move(segmentInfo));
 
@@ -142,7 +142,7 @@ void ReconstructRoute(IDirectionsEngine & engine, RoadGraphBase const & graph,
   // It's not correct and should be fixed. It's necessary to work correctly with such routes.
 
   vector<m2::PointD> routeGeometry;
-  JunctionsToPoints(junctions, routeGeometry);
+  JunctionsToPoints(path, routeGeometry);
 
   route.SetGeometry(routeGeometry.begin(), routeGeometry.end());
 }

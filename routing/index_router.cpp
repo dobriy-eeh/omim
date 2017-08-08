@@ -167,10 +167,21 @@ Junction InterpolateJunction(Segment const & segment, m2::PointD const & point, 
                              ratio * (static_cast<double>(end.GetAltitude()))));
 }
 
+Junction CalcProjectionToSegment(Segment const & segment, Junction const & junction,
+                                 WorldGraph & graph)
+{
+  m2::ProjectionToSection<m2::PointD> projection;
+  projection.SetBounds(graph.GetPoint(segment, false /* front */),
+                       graph.GetPoint(segment, true /* front */));
+  return Junction(projection(junction.GetPoint()), junction.GetAltitude());
+}
+
 IndexGraphStarter::FakeVertex MakeFakeVertex(Segment const & segment, m2::PointD const & point,
                                              bool strictForward, WorldGraph & graph)
 {
-  return {segment, InterpolateJunction(segment, point, graph), strictForward};
+  Junction const origin = InterpolateJunction(segment, point, graph);
+  Junction const projection = CalcProjectionToSegment(segment, origin, graph);
+  return {segment, origin, projection, strictForward};
 }
 
 bool MwmHasRoutingData(version::MwmTraits const & traits, VehicleType vehicleType)
@@ -398,7 +409,6 @@ IRouter::ResultCode IndexRouter::DoCalculateRoute(Checkpoints const & checkpoint
   WorldGraph graph = MakeWorldGraph();
 
   vector<Segment> segments;
-  segments.push_back(IndexGraphStarter::kStartFakeSegment);
 
   Segment startSegment;
   bool startSegmentIsAlmostCodirectionalDirection = false;
@@ -414,6 +424,9 @@ IRouter::ResultCode IndexRouter::DoCalculateRoute(Checkpoints const & checkpoint
 
   for (size_t i = checkpoints.GetPassedIdx(); i < checkpoints.GetNumSubroutes(); ++i)
   {
+    bool const isFirstSubroute = i == checkpoints.GetPassedIdx();
+    bool const isLastSubroute = i + 1 == checkpoints.GetNumSubroutes();
+
     vector<Segment> subroute;
     Junction startJunction;
     auto const result =
@@ -426,14 +439,28 @@ IRouter::ResultCode IndexRouter::DoCalculateRoute(Checkpoints const & checkpoint
     IndexGraphStarter::CheckValidRoute(subroute);
     auto const nonFakeStartIt = IndexGraphStarter::GetNonFakeStartIt(subroute);
     auto const nonFakeFinishIt = IndexGraphStarter::GetNonFakeFinishIt(subroute);
+    size_t subrouteSegmentsEnd = subrouteSegmentsBegin + (nonFakeFinishIt - nonFakeStartIt);
+
+    if (isFirstSubroute)
+    {
+      segments.push_back(*nonFakeStartIt);
+      ++subrouteSegmentsEnd;
+    }
+
     segments.insert(segments.end(), nonFakeStartIt, nonFakeFinishIt);
 
-    size_t subrouteSegmentsEnd = subrouteSegmentsBegin + (nonFakeFinishIt - nonFakeStartIt);
+    if (isLastSubroute)
+    {
+      segments.push_back(*nonFakeFinishIt);
+      segments.push_back(*nonFakeFinishIt);
+      ++subrouteSegmentsEnd;
+    }
+
     // There are N checkpoints and N-1 subroutes.
     // There is corresponding nearest segment for each checkpoint - checkpoint segment.
     // Each subroute except the last contains exactly one checkpoint segment - first segment.
     // Last subroute contains two checkpoint segments: the first and the last.
-    if (i + 1 == checkpoints.GetNumSubroutes())
+    if (isLastSubroute)
       ++subrouteSegmentsEnd;
 
     subroutes.emplace_back(startJunction, graph.GetJunction(*nonFakeFinishIt, true /* front */),
@@ -446,8 +473,6 @@ IRouter::ResultCode IndexRouter::DoCalculateRoute(Checkpoints const & checkpoint
   route.SetCurrentSubrouteIdx(checkpoints.GetPassedIdx());
   route.SetSubroteAttrs(move(subroutes));
 
-  segments.push_back(startSegment);
-  segments.push_back(IndexGraphStarter::kFinishFakeSegment);
   IndexGraphStarter::CheckValidRoute(segments);
 
   IndexGraphStarter starter(
@@ -505,13 +530,14 @@ IRouter::ResultCode IndexRouter::CalculateSubroute(Checkpoints const & checkpoin
       MakeFakeVertex(finishSegment, finishCheckpoint, false /* strictForward */, graph), graph);
 
   if (subrouteIdx == checkpoints.GetPassedIdx())
-    startJunction = starter.GetStartVertex().GetJunction();
+    startJunction = starter.GetStartVertex().GetOriginJunction();
   else
     startJunction = starter.GetJunction(startSegment, false /* front */);
 
   auto const progressRange = CalcProgressRange(checkpoints, subrouteIdx);
   AStarProgress progress(progressRange.startValue, progressRange.stopValue);
-  progress.Initialize(starter.GetStartVertex().GetPoint(), starter.GetFinishVertex().GetPoint());
+  progress.Initialize(starter.GetStartVertex().GetProjectedPoint(),
+                      starter.GetFinishVertex().GetProjectedPoint());
 
   uint32_t visitCount = 0;
 
@@ -573,8 +599,9 @@ IRouter::ResultCode IndexRouter::AdjustRoute(Checkpoints const & checkpoints,
                      checkpoints.GetPointTo(), false /* strictForward */, graph), graph);
 
   AStarProgress progress(0, 95);
-  progress.Initialize(starter.GetStartVertex().GetPoint(), starter.GetFinishVertex().GetPoint());
-  
+  progress.Initialize(starter.GetStartVertex().GetProjectedPoint(),
+                      starter.GetFinishVertex().GetProjectedPoint());
+
   vector<SegmentEdge> prevEdges;
   CHECK_LESS_OR_EQUAL(lastSubroute.GetEndSegmentIdx(), steps.size(), ());
   for (size_t i = lastSubroute.GetBeginSegmentIdx(); i < lastSubroute.GetEndSegmentIdx(); ++i)
@@ -615,8 +642,8 @@ IRouter::ResultCode IndexRouter::AdjustRoute(Checkpoints const & checkpoints,
   PushPassedSubroutes(checkpoints, subroutes);
 
   size_t subrouteOffset = result.path.size() - 1;  // -1 for the fake start.
-  subroutes.emplace_back(starter.GetStartVertex().GetJunction(),
-                         starter.GetFinishVertex().GetJunction(), 0 /* beginSegmentIdx */,
+  subroutes.emplace_back(starter.GetStartVertex().GetProjectedJunction(),
+                         starter.GetFinishVertex().GetProjectedJunction(), 0 /* beginSegmentIdx */,
                          subrouteOffset);
 
   for (size_t i = checkpoints.GetPassedIdx() + 1; i < lastSubroutes.size(); ++i)
@@ -779,7 +806,9 @@ IRouter::ResultCode IndexRouter::RedressRoute(vector<Segment> const & segments,
   double time = 0.0;
   times.emplace_back(static_cast<uint32_t>(0), 0.0);
   // First and last segments are fakes: skip it.
-  for (size_t i = 1; i < segments.size() - 1; ++i)
+
+  // TODO reduce fisrt and last segments
+  for (size_t i = 0; i < segments.size(); ++i)
   {
     time += starter.CalcSegmentWeight(segments[i]);
     times.emplace_back(static_cast<uint32_t>(i), time);
